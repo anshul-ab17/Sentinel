@@ -1,4 +1,4 @@
-type IconName = "shield" | "grid" | "launch" | "signal" | "replay" | "arrow" | "code" | "check";
+type IconName = "shield" | "grid" | "launch" | "signal" | "replay" | "arrow" | "code" | "check" | "gift" | "graph";
 
 const paths: Record<IconName, string> = {
   shield: "M12 3 4 6v6c0 5 8 9 8 9s8-4 8-9V6l-8-3Z M8 12l3 3 5-6",
@@ -9,6 +9,8 @@ const paths: Record<IconName, string> = {
   arrow: "M4 12h16 M14 6l6 6-6 6",
   code: "m8 6-6 6 6 6 M16 6l6 6-6 6 M14 3l-4 18",
   check: "m5 12 4 4L19 6",
+  gift: "M20 12v9H4v-9m-2-5h20v5H2zm10 14V7m0 0H7.5a2.5 2.5 0 1 1 2.5-2.5V7Zm0 0h4.5A2.5 2.5 0 1 0 12 4.5V7Z",
+  graph: "M3 3v18h18 M7 14l4-4 4 3 6-7",
 };
 
 export function Icon({ name, size = 20 }: { name: IconName; size?: number }) {

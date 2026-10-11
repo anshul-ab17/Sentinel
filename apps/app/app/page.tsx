@@ -1,10 +1,12 @@
 import { BrandLogo } from "@app/components/brand-logo";
 import { LandingMotion } from "@app/components/landing-motion";
+import { WorkflowStack } from "@app/components/workflow-stack";
 import type { Metadata } from "next";
 import Link from "next/link";
 import { ThemeToggle } from "@app/components/theme-toggle";
 import { LaunchPreview } from "@app/components/launch-preview";
 import { Icon } from "@app/components/icon";
+import { WalletConnect } from "@app/components/wallet-connect";
 import "./landing.css";
 
 export const metadata: Metadata = {
@@ -17,7 +19,7 @@ export default function Home() {
     <a className="skip-link" href="#main-content">Skip to content</a>
     <header className="landing-header"><Link href="/" className="landing-brand" aria-label="Sentinel home"><span className="landing-brand-mark"><BrandLogo size={36}/></span>sentinel<span className="landing-brand-ai">AI</span></Link>
       <nav className="landing-nav" aria-label="Main navigation"><a href="#workflow">How it works</a><a href="#developers">For developers</a><a href="#questions">Questions</a></nav>
-      <div className="landing-header-actions"><ThemeToggle/><Link className="landing-nav-cta" href="/dashboard">Open dashboard<Icon name="arrow" size={16}/></Link></div>
+      <div className="landing-header-actions"><ThemeToggle/><Link className="landing-nav-cta" href="/dashboard"><Icon name="arrow" size={17}/>Open dashboard</Link><WalletConnect/></div>
     </header>
     <main id="main-content" className="landing-main">
       <section className="landing-hero" aria-labelledby="hero-heading"><div className="hero-copy"><span className="hero-status"><Icon name="shield" size={14}/>Solana launch intelligence</span>
@@ -26,11 +28,11 @@ export default function Home() {
         <p className="hero-note">No wallet connection. Just a closer look.</p>
       </div><div className="hero-product"><div className="product-window-bar"><span className="product-window-dots" aria-hidden="true"><i/><i/><i/></span><span>Sentinel / Investigation workspace</span><span className="product-window-status">Demo preview</span></div><div className="hero-product-body"><aside className="product-context"><div className="product-context-heading"><Icon name="shield" size={18}/><strong>Follow the evidence.</strong></div><p>An investigation begins with a question.</p><div className="product-question">Who’s behind the early buying?</div><div className="product-context-steps"><span><Icon name="check" size={15}/>Explore the launch</span><span><Icon name="check" size={15}/>Trace funding links</span><span><Icon name="check" size={15}/>Inspect the finding</span></div><Link href="/dashboard">Try it in the dashboard<Icon name="arrow" size={15}/></Link><small>Synthetic events. Real detection rules.</small></aside><div className="hero-visual"><LaunchPreview/></div></div></div><div className="hero-protocol"><span>Built around</span><strong>Meteora DBC</strong><span className="protocol-divider"/><strong>Solana</strong><span className="protocol-divider"/><span>Evidence-first research</span></div></section>
 
-      <section id="workflow" className="landing-workflow" aria-labelledby="workflow-heading"><div className="section-intro"><div><p className="section-kicker">From activity to understanding</p><h2 id="workflow-heading">Follow the signal.<br/>Keep the evidence.</h2></div><p>A focused investigation workflow, from the first purchase to a finding you can inspect and reproduce.</p></div>
+      <WorkflowStack><div className="section-intro"><div><p className="section-kicker">How it works / From activity to understanding</p><h2 id="workflow-heading">Follow the signal.<br/>Keep the evidence.</h2></div><p>A focused investigation workflow, from the first purchase to a finding you can inspect and reproduce.</p></div>
         <div className="workflow-steps"><article><span className="workflow-icon"><Icon name="launch" size={24}/></span><span className="workflow-number">01 / Observe</span><h3>Start with what happened.</h3><p>Explore pool activity and early purchases. Keep every observation connected to its source event.</p><span className="workflow-detail">Pool events &amp; wallet activity</span></article>
           <article><span className="workflow-icon"><Icon name="signal" size={24}/></span><span className="workflow-number">02 / Investigate</span><h3>Look at the connections.</h3><p>Review buying concentration, shared funding sources, and large transfers through transparent rules.</p><span className="workflow-detail">Three deterministic detection rules</span></article>
           <article><span className="workflow-icon"><Icon name="replay" size={24}/></span><span className="workflow-number">03 / Verify</span><h3>Rewind. Inspect. Reproduce.</h3><p>Replay the same event window, inspect the evidence, and export a structured investigation report.</p><span className="workflow-detail">Versioned rules &amp; replay digests</span></article></div>
-      </section>
+      </WorkflowStack>
 
       <section id="developers" className="landing-developers" aria-labelledby="developers-heading"><div><p className="section-kicker">Intelligence you can build on</p><h2 id="developers-heading">Your workflow.<br/>Structured evidence.</h2><p>Explore the same pools, events, and findings through the development API. Build around readable signals with explicit data coverage.</p><a className="landing-secondary" href="/api/pools" target="_blank" rel="noreferrer">Inspect the sample API<Icon name="code" size={18}/></a><span className="api-disclosure">Development endpoints currently return synthetic data.</span></div>
         <div className="api-preview"><div className="api-preview-header"><span><span className="api-method">GET</span> /api/pools</span><span>JSON response</span></div><pre aria-label="Illustrative API response"><code>{`{

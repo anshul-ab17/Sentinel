@@ -1,19 +1,21 @@
 "use client";
 
 import { BrandLogo } from "@app/components/brand-logo";
-import { useState } from "react";
 import type { Snapshot } from "@shared/snapshot";
 import type { Alert, Event } from "@shared/events";
 import { ThemeToggle } from "@app/components/theme-toggle";
 import { Icon } from "@app/components/icon";
 import { ActivityChart } from "@app/components/activity-chart";
+import { CommandPalette } from "@app/components/command-palette";
+import { WalletGraph } from "@app/components/wallet-graph";
 import "@app/app/dashboard/dashboard.css";
+import { useEffect, useRef, useState, type CSSProperties } from "react";
 
 type ReplayResult = { digest: string; eventCount: number; alerts: Alert[]; ruleVersion: string };
-type View = "Overview" | "Launches" | "Alerts" | "Launch Autopsy";
-const views: { name: View; icon: "grid" | "launch" | "signal" | "replay" }[] = [
+type View = "Overview" | "Launches" | "Alerts" | "Wallet Graph" | "Launch Autopsy";
+const views: { name: View; icon: "grid" | "launch" | "signal" | "replay" | "graph" }[] = [
   { name: "Overview", icon: "grid" }, { name: "Launches", icon: "launch" },
-  { name: "Alerts", icon: "signal" }, { name: "Launch Autopsy", icon: "replay" },
+  { name: "Alerts", icon: "signal" }, { name: "Wallet Graph", icon: "graph" }, { name: "Launch Autopsy", icon: "replay" },
 ];
 const sol = (amount: string) => (Number(BigInt(amount) / 1000000n) / 1000).toLocaleString("en-US", { maximumFractionDigits: 3 });
 const time = (timestamp: number) => new Date(timestamp * 1000).toISOString().slice(11, 19);
@@ -30,6 +32,10 @@ export function Dashboard({ snapshot }: { snapshot: Snapshot }) {
   const [result, setResult] = useState<ReplayResult | null>(null);
   const [pending, setPending] = useState(false);
   const [error, setError] = useState("");
+  const [sidebarWidth, setSidebarWidth] = useState(212);
+  const [isResizingSidebar, setIsResizingSidebar] = useState(false);
+  const resizingSidebar = useRef(false);
+  const sidebarResizeOffset = useRef(0);
   const pool = snapshot.pools.find(pool => pool.address === poolId)!;
   const alert = snapshot.alerts.find(alert => alert.id === selectedAlert);
   const selectedEvents = snapshot.events.filter(event => event.pool === poolId);
@@ -42,6 +48,23 @@ export function Dashboard({ snapshot }: { snapshot: Snapshot }) {
     `${alert.title} ${alert.pool}`.toLowerCase().includes(query.toLowerCase()));
   const buys = snapshot.events.filter(event => event.kind === "buy");
   const total = buys.reduce((sum, event) => sum + BigInt(event.quoteLamports), 0n);
+
+  useEffect(() => {
+    try {
+      const saved = Number(localStorage.getItem("sentinel-sidebar-width"));
+      if (Number.isFinite(saved) && saved >= 44 && saved <= 360) setSidebarWidth(saved);
+    } catch { /* Keep the default sidebar width when storage is unavailable. */ }
+  }, []);
+
+  function persistSidebarWidth(width: number) {
+    const next = Math.min(360, Math.max(44, width));
+    setSidebarWidth(next);
+    try { localStorage.setItem("sentinel-sidebar-width", String(next)); } catch { /* Resizing still works when storage is unavailable. */ }
+  }
+
+  function resizeSidebar(event: React.PointerEvent<HTMLDivElement>) {
+    if (resizingSidebar.current) setSidebarWidth(Math.min(360, Math.max(44, event.clientX - sidebarResizeOffset.current)));
+  }
 
   async function runReplay() {
     setPending(true); setError(""); setResult(null);
@@ -80,6 +103,27 @@ export function Dashboard({ snapshot }: { snapshot: Snapshot }) {
     </section>;
   }
 
+  function launchBoard() {
+    const groups = [
+      { title: "Needs investigation", pools: filteredPools.filter(pool => pool.signals > 0), type: "review" },
+      { title: "No signals detected", pools: filteredPools.filter(pool => pool.signals === 0), type: "clear" },
+    ];
+    return <section className="launch-board" aria-label="Launches grouped by detection status">
+      {groups.map(group => <div className="launch-column" key={group.type}>
+        <div className="launch-column-heading"><span className={`launch-column-dot ${group.type}`}/><h2>{group.title}</h2><span className="count-label">{group.pools.length}</span></div>
+        <div className="launch-column-cards">{group.pools.map(pool => {
+          const index = snapshot.pools.findIndex(item => item.address === pool.address);
+          return <article className="launch-card" key={pool.address}>
+            <div className="launch-card-top"><span className={`token token-${index}`}>{pool.symbol.slice(0, 1)}</span><span>{pool.symbol}</span><span className={`badge ${pool.signals ? "amber" : "neutral"}`}>{pool.signals ? `${pool.signals} signals` : "No signals"}</span></div>
+            <h3>{pool.name}</h3><code>{pool.address}</code>
+            <div className="launch-card-metrics"><div><span>Buy volume</span><strong>{sol(pool.volume.toString())} SOL</strong></div><div><span>Purchases</span><strong>{pool.buys}</strong></div></div>
+            <button className="launch-card-action" onClick={() => { setPoolId(pool.address); setResult(null); setView("Launch Autopsy"); }}>Investigate <Icon name="arrow" size={14}/></button>
+          </article>;
+        })}{group.pools.length === 0 && <p className="launch-column-empty">No matching launches.</p>}</div>
+      </div>)}
+    </section>;
+  }
+
   function alertsPanel() {
     return <section className="panel"><div className="panel-heading"><div><span className="eyebrow">DETECTION ENGINE</span><h2>Signals to investigate</h2></div>
       <select aria-label="Filter alerts by severity" value={severity} onChange={event => setSeverity(event.target.value)}><option value="all">All severities</option><option value="high">High</option><option value="medium">Medium</option></select></div>
@@ -107,13 +151,13 @@ export function Dashboard({ snapshot }: { snapshot: Snapshot }) {
     return `${sol(event.lamports)} SOL transfer · ${event.wallet} → ${event.recipient}`;
   }
 
-  return <div className="app-shell dashboard-shell"><a className="dashboard-skip" href="#dashboard-content">Skip to dashboard</a><aside className="sidebar"><a href="/" className="brand"><span className="brand-symbol"><BrandLogo size={32}/></span>Sentinel<span className="brand-ai">AI</span></a><div className="workspace"><span className="workspace-icon">S</span><div>Research workspace<small>Personal workspace</small></div></div>
-    <span className="nav-label">Intelligence</span><nav aria-label="Dashboard navigation">{views.map(item => <button key={item.name} className={view === item.name ? "active" : ""} onClick={() => { setView(item.name); setQuery(""); }} aria-current={view === item.name ? "page" : undefined}><Icon name={item.icon} size={18}/>{item.name}{item.name === "Alerts" && <b>{snapshot.alerts.length}</b>}</button>)}</nav>
-    <div className="sidebar-bottom"><div className="network"><span className="status-dot"/><div>Solana / Meteora DBC<small>Demo environment</small></div></div><a href="/api/pools" target="_blank" rel="noreferrer">Developer API ↗</a><p>See the launch.<br/>Verify the evidence.</p><span className="version">SENTINEL v0.1.0</span></div></aside>
-    <div className="main-shell"><header className="topbar"><div className="breadcrumb">Workspace <span>/</span> <strong>{view}</strong></div><div className="topbar-actions"><span className="demo-pill"><span className="status-dot"/> Demo data</span><ThemeToggle /></div></header>
+  return <div className="app-shell dashboard-shell" data-sidebar-collapsed={sidebarWidth < 132} data-sidebar-min={sidebarWidth === 44} data-sidebar-resizing={isResizingSidebar} style={{ "--sidebar-width": `${sidebarWidth}px` } as CSSProperties}><a className="dashboard-skip" href="#dashboard-content">Skip to dashboard</a><aside className="sidebar"><a href="/" className="brand" aria-label="Sentinel AI"><span className="brand-symbol"><BrandLogo size={32}/></span><span className="brand-name">Sentinel</span><span className="brand-ai">AI</span></a><div className="workspace" title="Research workspace · Personal workspace"><span className="workspace-icon">S</span><div>Research workspace<small>Personal workspace</small></div></div>
+    <span className="nav-label">Intelligence</span><nav aria-label="Dashboard navigation">{views.map(item => <button key={item.name} title={item.name} aria-label={item.name} className={view === item.name ? "active" : ""} onClick={() => { setView(item.name); setQuery(""); }} aria-current={view === item.name ? "page" : undefined}><Icon name={item.icon} size={18}/><span className="nav-text">{item.name}</span>{item.name === "Alerts" && <b>{snapshot.alerts.length}</b>}</button>)}</nav>
+    <div className="sidebar-bottom"><div className="network" title="Solana / Meteora DBC · Demo environment"><span className="status-dot"/><div>Solana / Meteora DBC<small>Demo environment</small></div></div><a href="/api/pools" target="_blank" rel="noreferrer" title="Developer API"><Icon name="code" size={16}/><span>Developer API ↗</span></a><p>See the launch.<br/>Verify the evidence.</p><span className="version">SENTINEL v0.1.0</span></div></aside>
+    <div className="sidebar-resizer" role="separator" aria-label="Resize sidebar" aria-orientation="vertical" aria-valuemin={44} aria-valuemax={360} aria-valuenow={sidebarWidth} tabIndex={0} onPointerDown={event => { resizingSidebar.current = true; setIsResizingSidebar(true); sidebarResizeOffset.current = event.clientX - sidebarWidth; event.currentTarget.setPointerCapture(event.pointerId); }} onPointerMove={resizeSidebar} onPointerUp={event => { resizingSidebar.current = false; setIsResizingSidebar(false); persistSidebarWidth(event.clientX - sidebarResizeOffset.current); }} onPointerCancel={() => { resizingSidebar.current = false; setIsResizingSidebar(false); }} onKeyDown={event => { if (event.key === "ArrowLeft" || event.key === "ArrowRight") { event.preventDefault(); persistSidebarWidth(sidebarWidth + (event.key === "ArrowRight" ? 12 : -12)); } if (event.key === "Home") { event.preventDefault(); persistSidebarWidth(44); } if (event.key === "End") { event.preventDefault(); persistSidebarWidth(360); } }}/>
+    <div className="main-shell"><header className="topbar"><div className="breadcrumb">Workspace <span>/</span> <strong>{view}</strong></div><CommandPalette snapshot={snapshot} onView={nextView => { setView(nextView); setQuery(""); }} onPool={(id, search) => { setPoolId(id); setQuery(search); setView("Launches"); }} onAlert={(id, search) => { setSelectedAlert(id); setQuery(search); setView("Alerts"); }}/><div className="topbar-actions"><span className="demo-pill"><span className="status-dot"/> Demo data</span><ThemeToggle /></div></header>
       <main id="dashboard-content"><div className="page-heading"><div><h1>{view}</h1><p>{view === "Overview" ? "Launch activity, wallet patterns, and the evidence behind them." : view === "Launch Autopsy" ? "Replay a launch and trace each finding to its evidence." : "Explore activity and the evidence behind each signal."}</p></div><button className="primary" onClick={() => { setView("Launch Autopsy"); setQuery(""); }}><Icon name="replay" size={15}/> Replay launch</button></div>
         <div className="demo-banner"><span aria-hidden="true">ⓘ</span><p><strong>Demo workspace.</strong> Sample data for exploring Sentinel. Live monitoring and AI analysis are not connected.</p></div>
-        {view !== "Launch Autopsy" && <label className="search"><span>⌕</span><input value={query} onChange={event => setQuery(event.target.value)} placeholder="Search pools, tokens, or signals…" aria-label="Search pools and signals"/><kbd>SEARCH</kbd></label>}
         {view === "Overview" && <>
           <div className="stats">
             <article><span>Observed buy volume</span><strong>{sol(total.toString())}<em>SOL</em></strong><small>Across {buys.length} sample purchases</small></article>
@@ -128,8 +172,9 @@ export function Dashboard({ snapshot }: { snapshot: Snapshot }) {
           {poolTable()}
           <div className="investigation-grid"><div>{alertsPanel()}</div>{evidencePanel()}</div>
         </>}
-        {view === "Launches" && poolTable()}
+        {view === "Launches" && launchBoard()}
         {view === "Alerts" && <div className="investigation-grid"><div>{alertsPanel()}</div>{evidencePanel()}</div>}
+        {view === "Wallet Graph" && <><WalletGraph snapshot={snapshot}/><div className="investigation-grid"><div>{alertsPanel()}</div>{evidencePanel()}</div></>}
         {view === "Launch Autopsy" && <div className="replay-grid"><section className="panel replay-controls"><span className="eyebrow">HISTORICAL REPLAY</span><h2>Follow the first 90 seconds.</h2><p className="subtle">Select a pool and an observation window. The same events and rule version produce the same digest.</p>
           <label>Pool<select disabled={pending} value={poolId} onChange={event => { setPoolId(event.target.value); setResult(null); }}>{snapshot.pools.map(pool => <option key={pool.address} value={pool.address}>{pool.name} / {pool.symbol}</option>)}</select></label>
           <label>Seconds after creation <strong>{cutoff}s</strong><input disabled={pending} type="range" min="0" max="90" value={cutoff} onChange={event => { setCutoff(Number(event.target.value)); setResult(null); }}/></label><button className="primary full" disabled={pending} onClick={runReplay}>{pending ? "Replaying events…" : "Run deterministic replay ↗"}</button>
