@@ -55,8 +55,17 @@ export default function Home() {
         <details><summary>Can I reproduce a finding?</summary><p>Yes, within the demo dataset. Choose a pool and time window in Launch Autopsy. Identical finalized events and rule configuration produce the same replay digest.</p></details>
       </div></section>
 
-      <section className="landing-closing"><span className="closing-mark"><Icon name="shield" size={34}/></span><div><h2>Give the next signal a closer look.</h2><p>Start with a sample launch. Follow the evidence from there.</p></div><Link href="/dashboard" className="landing-primary">Open the dashboard<Icon name="arrow" size={18}/></Link></section>
+      <div className="landing-ruler" aria-hidden="true"/>
+      <section className="landing-closing" aria-labelledby="closing-heading"><div><h2 id="closing-heading">See the launch.<br/>Understand the signals.</h2><p>Trace the wallets. Follow the evidence. Start with Sentinel.</p></div><Link href="/dashboard" className="landing-primary">Get started<Icon name="arrow" size={18}/></Link></section>
+      <div className="landing-ruler" aria-hidden="true"/>
     </main>
-    <footer className="landing-footer"><Link href="/" className="landing-brand"><BrandLogo size={28}/>sentinel</Link><span>Built for research. Not financial advice.</span><a href="https://github.com/anshul-ab17/Sentinel" target="_blank" rel="noreferrer">View on GitHub</a></footer>
+    <footer className="landing-footer">
+      <div className="footer-intro"><p className="footer-statement">SIGNALS IN.<br/>EVIDENCE OUT.</p><Link href="/dashboard">Open Sentinel<Icon name="arrow" size={16}/></Link></div>
+      <nav className="footer-links" aria-label="Explore Sentinel"><h3>Explore</h3><Link href="/">Home</Link><a href="#workflow">How it works</a><a href="#questions">Questions</a></nav>
+      <nav className="footer-links" aria-label="Sentinel product"><h3>Product</h3><Link href="/dashboard">Dashboard</Link><a href="#developers">For developers</a><a href="/api/pools" target="_blank" rel="noreferrer">Sample API</a></nav>
+      <nav className="footer-links" aria-label="Sentinel resources"><h3>Resources</h3><a href="https://github.com/anshul-ab17/Sentinel" target="_blank" rel="noreferrer">GitHub<Icon name="arrow" size={14}/></a><a href="#questions">Data &amp; coverage</a></nav>
+      <Link href="/" className="footer-emblem" aria-label="Sentinel home"><BrandLogo size={96}/></Link>
+      <div className="footer-legal"><span>Sentinel AI ? Built for the Solana ecosystem.</span><span>Development preview ? Not financial advice.</span></div>
+    </footer>
   </LandingMotion>;
 }

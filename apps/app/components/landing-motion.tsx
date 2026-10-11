@@ -13,7 +13,7 @@ export function LandingMotion({ children }: { children: ReactNode }) {
     const animations = new Map<Element, Animation>();
     const revealed = new Set<Element>();
     const groups = [
-      ".landing-header", ".hero-copy > *", ".hero-product", ".hero-protocol",
+      ".hero-copy > *", ".hero-product", ".hero-protocol",
       ".section-intro > *", ".workflow-steps > article",
       ".landing-developers > *", ".landing-faq > div:first-child",
       ".faq-items > details", ".landing-closing > *", ".landing-footer > *",

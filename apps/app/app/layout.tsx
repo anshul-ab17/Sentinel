@@ -12,5 +12,5 @@ export const metadata: Metadata = {
 };
 
 export default function Layout({ children }: Readonly<{ children: React.ReactNode }>) {
-  return <html lang="en" className={`${sans.variable} ${mono.variable}`} suppressHydrationWarning><head><script dangerouslySetInnerHTML={{ __html: `(()=>{let theme;try{theme=localStorage.getItem('sentinel-theme')}catch{}document.documentElement.dataset.theme=theme==='light'||theme==='dark'?theme:matchMedia('(prefers-color-scheme: dark)').matches?'dark':'light'})()` }}/></head><body>{children}</body></html>;
+  return <html lang="en" className={`${sans.variable} ${mono.variable}`} suppressHydrationWarning><head><script dangerouslySetInnerHTML={{ __html: `(()=>{let theme;try{theme=localStorage.getItem('sentinel-theme')}catch{}document.documentElement.dataset.theme=theme==='light'||theme==='dark'?theme:'dark'})()` }}/></head><body>{children}</body></html>;
 }

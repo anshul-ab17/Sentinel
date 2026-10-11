@@ -1,16 +1,15 @@
 /* Dashboard-specific tokens keep the marketing page independent. */
 .dashboard-shell {
-  --bg: #fff; --panel: #fff; --surface: #f4f5f8; --line: #e8e9ef;
-  --text: #242733; --muted: #687084; --accent: #635bce; --accent-soft: #f0eefb;
-  --button: #635bce; --button-text: #fff; --sidebar: #f8f9fb;
-  --amber: #986324; --amber-soft: #fbf4e9;
-  background: var(--bg); color: var(--text); font-size: 14px;
-}
-:root[data-theme="dark"] .dashboard-shell {
-  --bg: #18191d; --panel: #1c1d22; --surface: #24252c; --line: #303139;
-  --text: #e4e5ec; --muted: #969bab; --accent: #afa6ff; --accent-soft: #28243d;
-  --button: #7567db; --button-text: #fff; --sidebar: #141519;
+  --bg: #18181b; --panel: #1e1e22; --surface: #27272c; --line: #34343b;
+  --text: #e8e6eb; --muted: #a09da7; --accent: #91AAB9; --accent-soft: #273740;
+  --button: var(--primary); --button-text: #211719; --sidebar: #141416;
   --amber: #dfb678; --amber-soft: #322a20;
+}
+:root[data-theme="light"] .dashboard-shell {
+  --bg: #fff; --panel: #fff; --surface: #f4f5f8; --line: #e8e9ef;
+  --text: #242733; --muted: #687084; --accent: #3F5A6A; --accent-soft: #E9EFF2;
+  --button: var(--primary); --button-text: #171717; --sidebar: #f8f9fb;
+  --amber: #986324; --amber-soft: #fbf4e9;
 }
 .dashboard-shell .sidebar { width: 224px; padding: 22px 12px; background: var(--sidebar); }
 .dashboard-shell .brand { font-size: 18px; letter-spacing: -.6px; padding: 0 12px; gap: 8px; }
@@ -86,14 +85,14 @@
 .dashboard-shell .chart-summary > strong { font-size: 28px; font-weight: 550; letter-spacing: -.5px; font-variant-numeric: tabular-nums; }
 .dashboard-shell .chart-summary > strong > span { font-size: 13px; color: var(--muted); font-weight: 400; letter-spacing: 0; }
 .dashboard-shell .chart-legend { display: flex; align-items: center; gap: 6px; font-size: 12px; color: var(--muted); }
-.dashboard-shell .chart-legend i { width: 6px; height: 6px; background: var(--accent); border-radius: 2px; }
+.dashboard-shell .chart-legend i { width: 6px; height: 6px; background: var(--primary); border-radius: 2px; }
 .dashboard-shell .activity-chart { padding: 5px 14px 0 6px; }
 .dashboard-shell .activity-chart svg { display: block; width: 100%; height: auto; min-height: 145px; }
 .dashboard-shell .chart-grid { stroke: var(--line); stroke-width: 1; }
 .dashboard-shell .chart-label { fill: var(--muted); font-size: 12px; font-family: inherit; }
-.dashboard-shell .chart-area { fill: var(--accent); opacity: .045; }
-.dashboard-shell .chart-line { fill: none; stroke: var(--accent); stroke-width: 2; stroke-linejoin: round; vector-effect: non-scaling-stroke; }
-.dashboard-shell .chart-point { fill: var(--panel); stroke: var(--accent); stroke-width: 1.5; }
+.dashboard-shell .chart-area { fill: var(--primary); opacity: .045; }
+.dashboard-shell .chart-line { fill: none; stroke: var(--primary); stroke-width: 2; stroke-linejoin: round; vector-effect: non-scaling-stroke; }
+.dashboard-shell .chart-point { fill: var(--panel); stroke: var(--primary); stroke-width: 1.5; }
 .dashboard-shell .chart-data { margin: 0; padding: 8px 18px; border: 0; }
 .dashboard-shell .chart-data summary { color: var(--muted); font-size: 12px; }
 .dashboard-shell .chart-data caption { font-size: 12px; color: var(--muted); padding: 12px 0; text-align: left; white-space: normal; }
@@ -106,7 +105,7 @@
 .dashboard-shell .distribution-dot { width: 6px; height: 6px; border-radius: 2px; }
 .dashboard-shell .distribution-track { height: 4px; background: var(--surface); border-radius: 4px; overflow: hidden; }
 .dashboard-shell .distribution-track > span { height: 100%; display: block; border-radius: 4px; }
-.dashboard-shell .pool-color-0 { background: var(--accent); }
+.dashboard-shell .pool-color-0 { background: var(--primary); }
 .dashboard-shell .pool-color-1 { background: #649eae; }
 .dashboard-shell .pool-color-2 { background: #a0a8ba; }
 .dashboard-shell .distribution-row small { display: block; font-size: 11px; color: var(--muted); margin-top: 5px; }
