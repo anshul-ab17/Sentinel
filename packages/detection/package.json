@@ -1,0 +1,9 @@
+{
+  "name": "@sentinel/detection",
+  "private": true,
+  "version": "0.1.0",
+  "type": "module",
+  "dependencies": {
+    "@sentinel/shared": "workspace:*"
+  }
+}
