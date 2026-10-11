@@ -1,0 +1,66 @@
+generator client {
+  provider = "prisma-client"
+  output   = "./generated"
+}
+
+datasource db {
+  provider = "postgresql"
+}
+
+model Pool {
+  address   String   @id
+  baseMint  String
+  quoteMint String
+  createdAt DateTime
+  events    Event[]
+  alerts    Alert[]
+}
+
+model Event {
+  id          String   @id
+  signature   String
+  eventIndex  Int
+  slot        BigInt
+  commitment  String
+  timestamp   DateTime
+  kind        String
+  poolAddress String
+  wallet      String?
+  payload     Json
+  pool        Pool     @relation(fields: [poolAddress], references: [address])
+  evidence    AlertEvidence[]
+
+  @@unique([signature, eventIndex])
+  @@index([poolAddress, timestamp])
+  @@index([wallet, timestamp])
+}
+
+model Alert {
+  id          String   @id
+  poolAddress String
+  ruleId      String
+  ruleVersion String
+  severity    String
+  timestamp   DateTime
+  observations Json
+  pool        Pool     @relation(fields: [poolAddress], references: [address])
+  evidence    AlertEvidence[]
+
+  @@index([poolAddress, timestamp])
+}
+
+model AlertEvidence {
+  alertId String
+  eventId String
+  alert   Alert @relation(fields: [alertId], references: [id])
+  event   Event @relation(fields: [eventId], references: [id])
+
+  @@id([alertId, eventId])
+}
+
+model Checkpoint {
+  source    String   @id
+  slot      BigInt
+  signature String?
+  updatedAt DateTime @updatedAt
+}
