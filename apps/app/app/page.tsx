@@ -1,3 +1,5 @@
+import { BrandLogo } from "@app/components/brand-logo";
+import { LandingMotion } from "@app/components/landing-motion";
 import type { Metadata } from "next";
 import Link from "next/link";
 import { ThemeToggle } from "@app/components/theme-toggle";
@@ -11,9 +13,9 @@ export const metadata: Metadata = {
 };
 
 export default function Home() {
-  return <div className="landing">
+  return <LandingMotion>
     <a className="skip-link" href="#main-content">Skip to content</a>
-    <header className="landing-header"><Link href="/" className="landing-brand" aria-label="Sentinel home"><span className="landing-brand-mark"><Icon name="shield" size={22}/></span>sentinel<span className="landing-brand-ai">AI</span></Link>
+    <header className="landing-header"><Link href="/" className="landing-brand" aria-label="Sentinel home"><span className="landing-brand-mark"><BrandLogo size={36}/></span>sentinel<span className="landing-brand-ai">AI</span></Link>
       <nav className="landing-nav" aria-label="Main navigation"><a href="#workflow">How it works</a><a href="#developers">For developers</a><a href="#questions">Questions</a></nav>
       <div className="landing-header-actions"><ThemeToggle/><Link className="landing-nav-cta" href="/dashboard">Open dashboard<Icon name="arrow" size={16}/></Link></div>
     </header>
@@ -55,6 +57,6 @@ export default function Home() {
 
       <section className="landing-closing"><span className="closing-mark"><Icon name="shield" size={34}/></span><div><h2>Give the next signal a closer look.</h2><p>Start with a sample launch. Follow the evidence from there.</p></div><Link href="/dashboard" className="landing-primary">Open the dashboard<Icon name="arrow" size={18}/></Link></section>
     </main>
-    <footer className="landing-footer"><Link href="/" className="landing-brand"><Icon name="shield" size={20}/>sentinel</Link><span>Built for research. Not financial advice.</span><a href="https://github.com/anshul-ab17/Sentinel" target="_blank" rel="noreferrer">View on GitHub</a></footer>
-  </div>;
+    <footer className="landing-footer"><Link href="/" className="landing-brand"><BrandLogo size={28}/>sentinel</Link><span>Built for research. Not financial advice.</span><a href="https://github.com/anshul-ab17/Sentinel" target="_blank" rel="noreferrer">View on GitHub</a></footer>
+  </LandingMotion>;
 }

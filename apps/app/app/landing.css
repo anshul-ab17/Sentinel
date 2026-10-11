@@ -1,3 +1,33 @@
+@keyframes landing-detail-enter {
+  from { opacity: 0; transform: translateY(6px); }
+  to { opacity: 1; transform: translateY(0); }
+}
+@media (prefers-reduced-motion: no-preference) {
+  .landing .landing-primary, .landing .landing-secondary, .landing .landing-nav-cta {
+    transition: transform 180ms ease, background 180ms ease, border-color 180ms ease;
+  }
+  .landing a > svg, .landing .workflow-icon {
+    transition: transform 220ms ease;
+  }
+  .landing .landing-faq details[open] p {
+    animation: landing-detail-enter 260ms ease-out;
+  }
+  .landing .graph-wallet rect, .landing .graph-wallet path {
+    transition: fill 300ms ease, stroke 300ms ease;
+  }
+  .landing .graph-funding, .landing .graph-source {
+    animation: landing-detail-enter 400ms ease-out;
+  }
+}
+@media (hover: hover) and (prefers-reduced-motion: no-preference) {
+  .landing .landing-primary:hover, .landing .landing-secondary:hover, .landing .landing-nav-cta:hover { transform: translateY(-2px); }
+  .landing a:hover > svg { transform: translateX(3px); }
+  .landing .workflow-steps article:hover .workflow-icon { transform: translateY(-4px); }
+}
+@media (prefers-reduced-motion: reduce) {
+  .landing *, .landing *::before, .landing *::after { animation: none !important; transition: none !important; scroll-behavior: auto !important; }
+}
+
 .landing {
   --landing-width: 1160px;
   --bg: #fcfcfd; --panel: #fff; --surface: #f4f5f7; --line: #e8e9ed;
@@ -31,7 +61,7 @@
 .landing-hero { display: grid; grid-template-columns: 1.05fr 1fr; align-items: center; gap: 62px; min-height: 690px; padding: 65px 0 76px; }
 .hero-status { display: inline-flex; align-items: center; gap: 8px; color: var(--accent); font-size: 12px; margin-bottom: 25px; }
 .hero-status .status-dot { width: 7px; height: 7px; }
-.hero-copy h1 { font-family: Bahnschrift, "Segoe UI", sans-serif; font-size: clamp(42px, 4.6vw, 65px); font-weight: 600; letter-spacing: -2.9px; line-height: 1.07; margin-bottom: 25px; }
+.hero-copy h1 { font-family: var(--font-sans), "Segoe UI", sans-serif; font-size: clamp(42px, 4.6vw, 65px); font-weight: 600; letter-spacing: -2.9px; line-height: 1.07; margin-bottom: 25px; }
 .hero-description { max-width: 430px; color: var(--muted); font-size: 16px; line-height: 1.85; margin-bottom: 29px; text-wrap: pretty; }
 .hero-actions { display: flex; flex-wrap: wrap; gap: 14px; align-items: center; }
 .landing-primary, .landing-secondary { display: inline-flex; align-items: center; justify-content: center; gap: 14px; font-size: 13px; font-weight: 600; min-height: 47px; padding: 13px 19px; border-radius: 7px; }
@@ -86,7 +116,7 @@
 .landing-workflow { padding: 65px 0 80px; border-top: 1px solid var(--line); scroll-margin-top: 30px; }
 .section-intro { display: flex; justify-content: space-between; align-items: end; gap: 50px; margin-bottom: 50px; }
 .section-kicker { color: var(--accent); font-size: 12px; margin-bottom: 17px; }
-.landing h2 { font-family: Bahnschrift, "Segoe UI", sans-serif; font-size: 36px; font-weight: 550; letter-spacing: -1.2px; line-height: 1.18; }
+.landing h2 { font-family: var(--font-sans), "Segoe UI", sans-serif; font-size: 36px; font-weight: 550; letter-spacing: -1.2px; line-height: 1.18; }
 .section-intro > p { max-width: 360px; color: var(--muted); font-size: 14px; line-height: 1.8; margin-bottom: 0; }
 .workflow-steps { display: grid; grid-template-columns: repeat(3, 1fr); }
 .workflow-steps article { padding: 0 34px; border-left: 1px solid var(--line); }
@@ -209,7 +239,7 @@
 .landing .landing-hero { display: flex; flex-direction: column; gap: 0; min-height: 0; padding: 76px 0 58px; }
 .landing .hero-copy { text-align: center; max-width: 760px; margin: 0 auto; }
 .landing .hero-status { display: inline-flex; border: 1px solid var(--line); background: var(--panel); border-radius: 20px; padding: 6px 11px; font-size: 11px; color: var(--muted); gap: 6px; margin-bottom: 25px; }
-.landing .hero-copy h1 { font-family: "Segoe UI", Arial, sans-serif; font-size: clamp(46px, 5.7vw, 76px); font-weight: 550; line-height: 1.05; letter-spacing: -3.6px; margin-bottom: 24px; }
+.landing .hero-copy h1 { font-family: var(--font-sans), "Segoe UI", Arial, sans-serif; font-size: clamp(46px, 5.7vw, 76px); font-weight: 550; line-height: 1.05; letter-spacing: -3.6px; margin-bottom: 24px; }
 .landing .hero-description { max-width: 540px; margin: 0 auto 27px; font-size: 16px; line-height: 1.8; }
 .landing .hero-actions { justify-content: center; gap: 10px; }
 .landing .landing-primary, .landing .landing-secondary { min-height: 46px; border-radius: 8px; font-weight: 500; font-size: 12px; padding: 12px 17px; }
@@ -245,7 +275,7 @@
 .landing .hero-protocol > span { font-size: 11px; }
 .landing .landing-workflow, .landing .landing-developers, .landing .landing-faq { padding-top: 80px; padding-bottom: 80px; }
 .landing .section-kicker { color: var(--muted); font-size: 11px; }
-.landing h2 { font-family: "Segoe UI", Arial, sans-serif; font-weight: 500; font-size: 33px; letter-spacing: -1.2px; }
+.landing h2 { font-family: var(--font-sans), "Segoe UI", Arial, sans-serif; font-weight: 500; font-size: 33px; letter-spacing: -1.2px; }
 .landing .workflow-icon { color: var(--muted); }
 .landing .workflow-steps h3 { font-size: 16px; font-weight: 550; }
 .landing .workflow-detail { color: var(--muted); }

@@ -13,7 +13,7 @@
   --purple: #c6a9ea; --purple-soft: #30283d; --blue: #a0c6e9; --blue-soft: #253344; --error: #ffaaa3;
 }
 * { box-sizing: border-box; }
-body { margin: 0; background: var(--bg); color: var(--text); font-family: "Segoe UI", Arial, sans-serif; font-size: 14px; -webkit-font-smoothing: antialiased; }
+body { margin: 0; background: var(--bg); color: var(--text); font-family: var(--font-sans), "Segoe UI", Arial, sans-serif; font-size: 14px; -webkit-font-smoothing: antialiased; }
 button, input, select { font: inherit; }
 button, a { -webkit-tap-highlight-color: transparent; transition: background .15s, border-color .15s; }
 button { cursor: pointer; color: inherit; }
@@ -24,7 +24,7 @@ h1, h2, h3, p { margin-top: 0; }
 h1 { font-size: 30px; font-weight: 600; letter-spacing: -1px; margin-bottom: 10px; }
 h2 { font-size: 16px; letter-spacing: -.3px; font-weight: 600; margin: 0; }
 h3 { font-size: 17px; line-height: 1.5; font-weight: 600; }
-code, kbd { font-family: Consolas, monospace; font-size: 11px; }
+code, kbd { font-family: var(--font-mono), Consolas, monospace; font-size: 11px; }
 small { font-size: 12px; }
 .app-shell { display: flex; min-height: 100vh; }
 .sidebar { position: fixed; inset: 0 auto 0 0; width: 224px; border-right: 1px solid var(--line); padding: 28px 16px; background: var(--panel); display: flex; flex-direction: column; overflow-y: auto; }
@@ -156,7 +156,7 @@ summary { cursor: pointer; color: var(--text); }
 .timeline { list-style: none; padding: 25px; margin: 0; }
 .timeline li { display: flex; gap: 17px; position: relative; padding: 0 0 30px; }
 .timeline li:last-child { padding-bottom: 0; }
-.timeline time { font-size: 11px; color: var(--muted); width: 35px; margin-top: 4px; flex-shrink: 0; font-family: Consolas, monospace; }
+.timeline time { font-size: 11px; color: var(--muted); width: 35px; margin-top: 4px; flex-shrink: 0; font-family: var(--font-mono), Consolas, monospace; }
 .timeline-dot { border: 2px solid var(--accent); border-radius: 50%; width: 9px; height: 9px; margin-top: 5px; flex-shrink: 0; }
 .timeline-dot.funding { border-color: var(--purple); }
 .timeline-dot.transfer { border-color: var(--amber); }
@@ -198,3 +198,5 @@ footer { display: flex; justify-content: space-between; gap: 20px; font-size: 10
   footer { flex-direction: column; gap: 10px; }
 }
 @media (prefers-reduced-motion: reduce) { * { transition: none !important; scroll-behavior: auto !important; } }
+
+.brand-logo { display: block; flex-shrink: 0; object-fit: contain; border-radius: 50%; background: #000; }

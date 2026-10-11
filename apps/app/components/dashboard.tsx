@@ -1,5 +1,6 @@
 "use client";
 
+import { BrandLogo } from "@app/components/brand-logo";
 import { useState } from "react";
 import type { Snapshot } from "@shared/snapshot";
 import type { Alert, Event } from "@shared/events";
@@ -106,7 +107,7 @@ export function Dashboard({ snapshot }: { snapshot: Snapshot }) {
     return `${sol(event.lamports)} SOL transfer · ${event.wallet} → ${event.recipient}`;
   }
 
-  return <div className="app-shell dashboard-shell"><a className="dashboard-skip" href="#dashboard-content">Skip to dashboard</a><aside className="sidebar"><a href="/" className="brand"><span className="brand-symbol"><Icon name="shield" size={23}/></span>Sentinel<span className="brand-ai">AI</span></a><div className="workspace"><span className="workspace-icon">S</span><div>Research workspace<small>Personal workspace</small></div></div>
+  return <div className="app-shell dashboard-shell"><a className="dashboard-skip" href="#dashboard-content">Skip to dashboard</a><aside className="sidebar"><a href="/" className="brand"><span className="brand-symbol"><BrandLogo size={32}/></span>Sentinel<span className="brand-ai">AI</span></a><div className="workspace"><span className="workspace-icon">S</span><div>Research workspace<small>Personal workspace</small></div></div>
     <span className="nav-label">Intelligence</span><nav aria-label="Dashboard navigation">{views.map(item => <button key={item.name} className={view === item.name ? "active" : ""} onClick={() => { setView(item.name); setQuery(""); }} aria-current={view === item.name ? "page" : undefined}><Icon name={item.icon} size={18}/>{item.name}{item.name === "Alerts" && <b>{snapshot.alerts.length}</b>}</button>)}</nav>
     <div className="sidebar-bottom"><div className="network"><span className="status-dot"/><div>Solana / Meteora DBC<small>Demo environment</small></div></div><a href="/api/pools" target="_blank" rel="noreferrer">Developer API ↗</a><p>See the launch.<br/>Verify the evidence.</p><span className="version">SENTINEL v0.1.0</span></div></aside>
     <div className="main-shell"><header className="topbar"><div className="breadcrumb">Workspace <span>/</span> <strong>{view}</strong></div><div className="topbar-actions"><span className="demo-pill"><span className="status-dot"/> Demo data</span><ThemeToggle /></div></header>
