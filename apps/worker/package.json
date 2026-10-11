@@ -1,0 +1,7 @@
+{
+  "name": "@sentinel/worker",
+  "version": "0.1.0",
+  "private": true,
+  "type": "module",
+  "scripts": { "demo": "node --import ../../scripts/register-aliases.mjs --experimental-strip-types src/index.ts" }
+}
