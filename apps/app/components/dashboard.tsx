@@ -3,12 +3,16 @@
 import { useState } from "react";
 import type { Snapshot } from "@shared/snapshot";
 import type { Alert, Event } from "@shared/events";
+import { ThemeToggle } from "@app/components/theme-toggle";
+import { Icon } from "@app/components/icon";
+import { ActivityChart } from "@app/components/activity-chart";
+import "@app/app/dashboard/dashboard.css";
 
 type ReplayResult = { digest: string; eventCount: number; alerts: Alert[]; ruleVersion: string };
 type View = "Overview" | "Launches" | "Alerts" | "Launch Autopsy";
-const views: { name: View; icon: string }[] = [
-  { name: "Overview", icon: "◈" }, { name: "Launches", icon: "↗" },
-  { name: "Alerts", icon: "◇" }, { name: "Launch Autopsy", icon: "↺" },
+const views: { name: View; icon: "grid" | "launch" | "signal" | "replay" }[] = [
+  { name: "Overview", icon: "grid" }, { name: "Launches", icon: "launch" },
+  { name: "Alerts", icon: "signal" }, { name: "Launch Autopsy", icon: "replay" },
 ];
 const sol = (amount: string) => (Number(BigInt(amount) / 1000000n) / 1000).toLocaleString("en-US", { maximumFractionDigits: 3 });
 const time = (timestamp: number) => new Date(timestamp * 1000).toISOString().slice(11, 19);
@@ -19,6 +23,8 @@ export function Dashboard({ snapshot }: { snapshot: Snapshot }) {
   const [poolId, setPoolId] = useState(snapshot.pools[0].address);
   const [selectedAlert, setSelectedAlert] = useState<string | null>(snapshot.alerts[0]?.id ?? null);
   const [severity, setSeverity] = useState("all");
+  const [poolFilter, setPoolFilter] = useState<"all" | "flagged">("all");
+  const [sort, setSort] = useState<"volume" | "name" | "signals">("volume");
   const [cutoff, setCutoff] = useState(90);
   const [result, setResult] = useState<ReplayResult | null>(null);
   const [pending, setPending] = useState(false);
@@ -26,7 +32,11 @@ export function Dashboard({ snapshot }: { snapshot: Snapshot }) {
   const pool = snapshot.pools.find(pool => pool.address === poolId)!;
   const alert = snapshot.alerts.find(alert => alert.id === selectedAlert);
   const selectedEvents = snapshot.events.filter(event => event.pool === poolId);
-  const filteredPools = snapshot.pools.filter(pool => `${pool.name} ${pool.symbol} ${pool.address}`.toLowerCase().includes(query.toLowerCase()));
+  const poolRows = snapshot.pools.map(pool => {
+    const buys = snapshot.events.filter(event => event.pool === pool.address && event.kind === "buy");
+    return { ...pool, buys: buys.length, volume: buys.reduce((sum, event) => sum + (event.kind === "buy" ? BigInt(event.quoteLamports) : 0n), 0n), signals: snapshot.alerts.filter(alert => alert.pool === pool.address).length };
+  });
+  const filteredPools = poolRows.filter(pool => `${pool.name} ${pool.symbol} ${pool.address}`.toLowerCase().includes(query.toLowerCase()) && (poolFilter === "all" || pool.signals > 0)).sort((a, b) => sort === "name" ? a.name.localeCompare(b.name) : sort === "signals" ? b.signals - a.signals || a.name.localeCompare(b.name) : a.volume === b.volume ? a.name.localeCompare(b.name) : a.volume > b.volume ? -1 : 1);
   const filteredAlerts = snapshot.alerts.filter(alert => (severity === "all" || alert.severity === severity) &&
     `${alert.title} ${alert.pool}`.toLowerCase().includes(query.toLowerCase()));
   const buys = snapshot.events.filter(event => event.kind === "buy");
@@ -54,18 +64,18 @@ export function Dashboard({ snapshot }: { snapshot: Snapshot }) {
   }
 
   function poolTable() {
-    return <section className="panel"><div className="panel-heading"><div><span className="eyebrow">DBC EXPLORER</span><h2>Launch watchlist</h2></div><span className="subtle">{filteredPools.length} pools</span></div>
-      <div className="table-scroll"><table><thead><tr><th>Token / pool</th><th>Observed buys</th><th>Buy volume</th><th>Signals</th><th>Investigate</th></tr></thead><tbody>
-        {filteredPools.map((pool, index) => {
-          const buys = snapshot.events.filter(event => event.pool === pool.address && event.kind === "buy");
-          const amount = buys.reduce((sum, event) => sum + (event.kind === "buy" ? BigInt(event.quoteLamports) : 0n), 0n);
-          const count = snapshot.alerts.filter(alert => alert.pool === pool.address).length;
+    return <section className="panel pools-panel"><div className="panel-heading"><div className="heading-inline"><h2>Launches</h2><span className="count-label">{filteredPools.length}</span></div><div className="table-controls"><div className="metric-switch" role="group" aria-label="Filter pools"><button aria-pressed={poolFilter === "all"} onClick={() => setPoolFilter("all")}>All pools</button><button aria-pressed={poolFilter === "flagged"} onClick={() => setPoolFilter("flagged")}>With signals</button></div><select value={sort} aria-label="Sort pools" onChange={event => setSort(event.target.value as typeof sort)}><option value="volume">Volume: high to low</option><option value="signals">Most signals</option><option value="name">Name: A–Z</option></select></div></div>
+      <div className="table-scroll"><table><thead><tr><th>Token / pool</th><th className="numeric">Purchases</th><th className="numeric">Buy volume</th><th>Detection status</th><th className="row-action-heading">Action</th></tr></thead><tbody>
+        {filteredPools.map(pool => {
+          const index = snapshot.pools.findIndex(item => item.address === pool.address);
+          const amount = pool.volume;
+          const count = pool.signals;
           return <tr key={pool.address}><td><div className="token-cell"><span className={`token token-${index}`}>{pool.symbol.slice(0, 1)}</span><div><strong>{pool.name} <small>{pool.symbol}</small></strong><code>{pool.address}</code></div></div></td>
-            <td>{buys.length} <span className="subtle">transactions</span></td><td>{sol(amount.toString())} <span className="subtle">SOL</span></td>
-            <td><span className={`badge ${count ? "amber" : "neutral"}`}>{count ? `${count} signals` : "No rules triggered"}</span></td>
-            <td><button className="text-button" onClick={() => { setPoolId(pool.address); setResult(null); setView("Launch Autopsy"); }}>Replay ↗</button></td></tr>;
+            <td className="numeric">{pool.buys}</td><td className="numeric volume-cell">{sol(amount.toString())} <span className="subtle">SOL</span></td>
+            <td><span className={`badge ${count ? "amber" : "neutral"}`}><i/>{count ? `${count} signals` : "No signals"}</span></td>
+            <td className="row-action"><button className="text-button" onClick={() => { setPoolId(pool.address); setResult(null); setView("Launch Autopsy"); }}>Investigate <Icon name="arrow" size={14}/></button></td></tr>;
         })}
-      </tbody></table>{!filteredPools.length && <p className="empty">No pools match your search.</p>}</div>
+      </tbody></table>{!filteredPools.length && <p className="empty">No pools match your filters.</p>}</div><div className="table-foot"><span>{filteredPools.length} of {snapshot.pools.length} sample pools</span><span>Meteora DBC · Finalized fixtures</span></div>
     </section>;
   }
 
@@ -96,14 +106,27 @@ export function Dashboard({ snapshot }: { snapshot: Snapshot }) {
     return `${sol(event.lamports)} SOL transfer · ${event.wallet} → ${event.recipient}`;
   }
 
-  return <div className="app-shell"><aside className="sidebar"><a href="/" className="brand"><span className="brand-symbol">◈</span>SENTINEL<span className="brand-ai">AI</span></a><div className="workspace"><span className="workspace-icon">S</span><div>Research workspace<small>Solana intelligence</small></div><span>⌄</span></div>
-    <span className="nav-label">INTELLIGENCE</span><nav>{views.map(item => <button key={item.name} className={view === item.name ? "active" : ""} onClick={() => { setView(item.name); setQuery(""); }} aria-current={view === item.name ? "page" : undefined}><span>{item.icon}</span>{item.name}{item.name === "Alerts" && <b>{snapshot.alerts.length}</b>}</button>)}</nav>
+  return <div className="app-shell dashboard-shell"><a className="dashboard-skip" href="#dashboard-content">Skip to dashboard</a><aside className="sidebar"><a href="/" className="brand"><span className="brand-symbol"><Icon name="shield" size={23}/></span>Sentinel<span className="brand-ai">AI</span></a><div className="workspace"><span className="workspace-icon">S</span><div>Research workspace<small>Personal workspace</small></div></div>
+    <span className="nav-label">Intelligence</span><nav aria-label="Dashboard navigation">{views.map(item => <button key={item.name} className={view === item.name ? "active" : ""} onClick={() => { setView(item.name); setQuery(""); }} aria-current={view === item.name ? "page" : undefined}><Icon name={item.icon} size={18}/>{item.name}{item.name === "Alerts" && <b>{snapshot.alerts.length}</b>}</button>)}</nav>
     <div className="sidebar-bottom"><div className="network"><span className="status-dot"/><div>Solana / Meteora DBC<small>Demo environment</small></div></div><a href="/api/pools" target="_blank" rel="noreferrer">Developer API ↗</a><p>See the launch.<br/>Verify the evidence.</p><span className="version">SENTINEL v0.1.0</span></div></aside>
-    <div className="main-shell"><header className="topbar"><div className="breadcrumb">Workspace <span>/</span> <strong>{view}</strong></div><span className="demo-pill"><span className="status-dot"/> Synthetic demo</span></header>
-      <main><div className="page-heading"><div><span className="eyebrow">SOLANA LAUNCH INTELLIGENCE</span><h1>{view === "Overview" ? "Every signal has a story." : view}</h1><p>{view === "Overview" ? "Trace the activity. Investigate the connections. Follow the evidence." : view === "Launch Autopsy" ? "Reconstruct a launch from versioned, deterministic event data." : "Inspect observed activity and the evidence behind each signal."}</p></div><button className="primary" onClick={() => { setView("Launch Autopsy"); setQuery(""); }}>↺ Launch Autopsy</button></div>
-        <div className="demo-banner"><span>◉</span><p><strong>Development preview</strong> All activity below is synthetic. Live RPC ingestion, database persistence, and AI analysis are not connected.</p><span className="banner-tag">FIXTURE DATA</span></div>
+    <div className="main-shell"><header className="topbar"><div className="breadcrumb">Workspace <span>/</span> <strong>{view}</strong></div><div className="topbar-actions"><span className="demo-pill"><span className="status-dot"/> Demo data</span><ThemeToggle /></div></header>
+      <main id="dashboard-content"><div className="page-heading"><div><h1>{view}</h1><p>{view === "Overview" ? "Launch activity, wallet patterns, and the evidence behind them." : view === "Launch Autopsy" ? "Replay a launch and trace each finding to its evidence." : "Explore activity and the evidence behind each signal."}</p></div><button className="primary" onClick={() => { setView("Launch Autopsy"); setQuery(""); }}><Icon name="replay" size={15}/> Replay launch</button></div>
+        <div className="demo-banner"><span aria-hidden="true">ⓘ</span><p><strong>Demo workspace.</strong> Sample data for exploring Sentinel. Live monitoring and AI analysis are not connected.</p></div>
         {view !== "Launch Autopsy" && <label className="search"><span>⌕</span><input value={query} onChange={event => setQuery(event.target.value)} placeholder="Search pools, tokens, or signals…" aria-label="Search pools and signals"/><kbd>SEARCH</kbd></label>}
-        {view === "Overview" && <><div className="stats"><article><span>Observed pools</span><strong>{snapshot.pools.length.toString().padStart(2, "0")}</strong><small>Meteora DBC fixtures <b>↗</b></small></article><article><span>Observed buy volume</span><strong>{sol(total.toString())}<em>SOL</em></strong><small>Across {buys.length} sample buys <b>↗</b></small></article><article><span>Rule-based signals</span><strong>{snapshot.alerts.length.toString().padStart(2, "0")}<i className="tiny-amber"/></strong><small>{snapshot.alerts.filter(alert => alert.severity === "high").length} high severity · review required</small></article><article><span>Evidence coverage</span><strong>Finalized</strong><small>Supplied events only <span className="status-dot"/></small></article></div>{poolTable()}<div className="investigation-grid"><div>{alertsPanel()}<section className="method-card"><span className="orbit-mark">◎</span><div><span className="eyebrow">BUILT FOR VERIFICATION</span><h3>Signals, with the receipts.</h3><p>Every finding links to its source events and a versioned rule. Replay the same dataset to reproduce the result.</p></div></section></div>{evidencePanel()}</div></>}
+        {view === "Overview" && <>
+          <div className="stats">
+            <article><span>Observed buy volume</span><strong>{sol(total.toString())}<em>SOL</em></strong><small>Across {buys.length} sample purchases</small></article>
+            <article><span>Tracked launches</span><strong>{snapshot.pools.length}</strong><small>Meteora DBC pools</small></article>
+            <article><span>Detection signals</span><strong>{snapshot.alerts.length}<span className="stat-tag">{snapshot.alerts.filter(alert => alert.severity === "high").length} high priority</span></strong><small>Rule-based findings for review</small></article>
+            <article><span>Evidence records</span><strong>{snapshot.events.length}</strong><small>Finalized synthetic events</small></article>
+          </div>
+          <div className="analytics-grid"><ActivityChart snapshot={snapshot}/><section className="panel distribution-panel"><div className="panel-heading"><div><h2>Volume by launch</h2><p>Share of observed buy volume</p></div></div><div className="distribution-list">{poolRows.map((pool, index) => {
+            const share = total > 0n ? Number(pool.volume * 10000n / total) / 100 : 0;
+            return <div className="distribution-row" key={pool.address}><div><span className={`distribution-dot pool-color-${index}`}/><strong>{pool.name}</strong><span>{sol(pool.volume.toString())} SOL</span></div><div className="distribution-track"><span className={`pool-color-${index}`} style={{ width: `${share}%` }}/></div><small>{share.toFixed(1)}% of total</small></div>;
+          })}</div><div className="distribution-note">Volume share describes activity, not token safety.</div></section></div>
+          {poolTable()}
+          <div className="investigation-grid"><div>{alertsPanel()}</div>{evidencePanel()}</div>
+        </>}
         {view === "Launches" && poolTable()}
         {view === "Alerts" && <div className="investigation-grid"><div>{alertsPanel()}</div>{evidencePanel()}</div>}
         {view === "Launch Autopsy" && <div className="replay-grid"><section className="panel replay-controls"><span className="eyebrow">HISTORICAL REPLAY</span><h2>Follow the first 90 seconds.</h2><p className="subtle">Select a pool and an observation window. The same events and rule version produce the same digest.</p>
