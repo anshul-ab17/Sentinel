@@ -1,0 +1,27 @@
+{
+  "name": "sentinel",
+  "private": true,
+  "type": "module",
+  "workspaces": ["apps/*", "packages/*"],
+  "engines": { "node": ">=24" },
+  "version": "0.1.0",
+  "packageManager": "pnpm@11.9.0",
+  "scripts": {
+    "dev": "pnpm --parallel --filter @sentinel/app --filter @sentinel/server dev",
+    "dev:app": "pnpm --filter @sentinel/app dev",
+    "dev:server": "pnpm --filter @sentinel/server dev",
+    "build": "pnpm --filter @sentinel/app build",
+    "worker:demo": "pnpm --filter @sentinel/worker demo",
+    "typecheck": "tsc --noEmit",
+    "test": "node --import ./scripts/register-aliases.mjs --experimental-strip-types --test tests/*.test.ts",
+    "db:validate": "pnpm --filter @sentinel/database validate",
+    "db:generate": "pnpm --filter @sentinel/database generate",
+    "db:push": "pnpm --filter @sentinel/database db:push"
+  },
+  "devDependencies": {
+    "@types/node": "^22.20.0",
+    "@types/react": "^19.0.0",
+    "@types/react-dom": "^19.0.0",
+    "typescript": "^5.9.0"
+  }
+}

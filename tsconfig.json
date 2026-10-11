@@ -1,0 +1,26 @@
+{
+  "compilerOptions": {
+    "target": "ES2022",
+    "lib": ["dom", "dom.iterable", "es2022"],
+    "strict": true,
+    "noEmit": true,
+    "allowImportingTsExtensions": true,
+    "paths": {
+      "@shared/*": ["./packages/shared/*"],
+      "@detection/*": ["./packages/detection/*"],
+      "@ai/*": ["./packages/ai/*"],
+      "@server/*": ["./apps/server/src/*"],
+      "@app/*": ["./apps/app/*"],
+      "@fixtures/*": ["./tests/fixtures/*"]
+    },
+    "skipLibCheck": true,
+    "esModuleInterop": true,
+    "module": "esnext",
+    "moduleResolution": "bundler",
+    "resolveJsonModule": true,
+    "jsx": "react-jsx",
+    "isolatedModules": true
+  },
+  "include": ["apps/**/*.ts", "apps/**/*.tsx", "packages/**/*.ts", "packages/**/*.tsx", "tests/**/*.ts"],
+  "exclude": ["node_modules", "**/.next", "packages/database/generated"]
+}
