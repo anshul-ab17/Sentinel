@@ -1,46 +1,28 @@
 "use client";
 
-import { BrandLogo } from "@app/components/brand-logo";
+import { useEffect, useState, type CSSProperties } from "react";
 import type { Snapshot } from "@shared/snapshot";
-import type { Alert, Event } from "@shared/events";
-import { ThemeToggle } from "@app/components/theme-toggle";
-import { Icon, type IconName } from "@app/components/icon";
-import { DashboardModule, type ModuleView } from "@app/components/dashboard-module";
-import { SidebarProfile } from "@app/components/sidebar-profile";
-import { SidebarProvider, Sidebar, SidebarHeader, SidebarContent, SidebarFooter, SidebarGroup, SidebarGroupLabel, SidebarMenu, SidebarMenuItem, SidebarMenuButton, SidebarTrigger } from "@app/components/ui/sidebar";
 import { ActivityChart } from "@app/components/activity-chart";
-import { CommandPalette } from "@app/components/command-palette";
-import { WalletGraph } from "@app/components/wallet-graph";
+import { DashboardModule, type ModuleView } from "@app/components/dashboard-module";
 import { DashboardOverview } from "@app/components/dashboard-overview";
+import { Icon } from "@app/components/icon";
+import { SidebarProvider } from "@app/components/ui/sidebar";
+import { WalletGraph } from "@app/components/wallet-graph";
+import { DashboardNavigation } from "./dashboard/navigation-shell";
+import { LaunchReplay, type ReplayResult } from "./dashboard/replay";
+import { PoolTable, LaunchBoard } from "./dashboard/launches";
+import { InvestigationPanels } from "./dashboard/signals";
+import { views, type View } from "./dashboard/navigation";
+import { useSnapshot } from "./dashboard/use-snapshot";
+import { useSavedInvestigations } from "./dashboard/use-saved-investigations";
 import "@app/app/dashboard/dashboard.css";
 import "@app/app/dashboard/premium-dashboard.css";
 import "@app/app/dashboard/reference-dashboard.css";
-import { useEffect, useState, type CSSProperties } from "react";
 
-type ReplayResult = { digest: string; eventCount: number; alerts: Alert[]; ruleVersion: string };
-type View = "Overview" | "Launches" | "Alerts" | "Wallet Graph" | "Launch Autopsy" | "DBC Explorer" | "Analytics" | "Funding Graph" | "Anomaly Engine" | ModuleView;
-const views: { name: View; label: string; group: string; icon: IconName }[] = [
-  { name: "Overview", label: "Overview", group: "Monitor", icon: "grid" },
-  { name: "Launches", label: "Launch Radar", group: "Monitor", icon: "launch" },
-  { name: "DBC Explorer", label: "DBC Explorer", group: "Monitor", icon: "database" },
-  { name: "Alerts", label: "Smart Alerts", group: "Monitor", icon: "bell" },
-  { name: "Launch Autopsy", label: "Token Dossier", group: "Investigate", icon: "replay" },
-  { name: "Wallet Graph", label: "Wallet Intelligence", group: "Investigate", icon: "wallet" },
-  { name: "Funding Graph", label: "Funding Graph", group: "Investigate", icon: "network" },
-  { name: "Whale Tracker", label: "Whale Tracker", group: "Investigate", icon: "whale" },
-  { name: "Anomaly Engine", label: "Anomaly Engine", group: "Analyze", icon: "signal" },
-  { name: "Holder Concentration", label: "Holder Concentration", group: "Analyze", icon: "pie" },
-  { name: "Liquidity Monitor", label: "Liquidity Monitor", group: "Analyze", icon: "drop" },
-  { name: "Analytics", label: "Analytics", group: "Analyze", icon: "graph" },
-  { name: "Saved investigations", label: "Saved investigations", group: "Workspace", icon: "bookmark" },
-];
-const sol = (amount: string) => (Number(BigInt(amount) / 1000000n) / 1000).toLocaleString("en-US", { maximumFractionDigits: 3 });
-const time = (timestamp: number) => new Date(timestamp * 1000).toISOString().slice(11, 19);
-
-export function Dashboard({ snapshot }: { snapshot: Snapshot }) {
+export function Dashboard({ snapshot: initialSnapshot }: { snapshot: Snapshot }) {
+  const { snapshot, poolId, setPoolId } = useSnapshot(initialSnapshot);
   const [view, setView] = useState<View>("Overview");
   const [query, setQuery] = useState("");
-  const [poolId, setPoolId] = useState(snapshot.pools[0].address);
   const [selectedAlert, setSelectedAlert] = useState<string | null>(snapshot.alerts[0]?.id ?? null);
   const [severity, setSeverity] = useState("all");
   const [poolFilter, setPoolFilter] = useState<"all" | "flagged">("all");
@@ -49,148 +31,282 @@ export function Dashboard({ snapshot }: { snapshot: Snapshot }) {
   const [result, setResult] = useState<ReplayResult | null>(null);
   const [pending, setPending] = useState(false);
   const [error, setError] = useState("");
-  const [savedIds, setSavedIds] = useState<string[]>([]);
+  const { savedIds, toggleSaved } = useSavedInvestigations(snapshot, setError);
   const [sidebarWidth, setSidebarWidth] = useState(244);
-  const pool = snapshot.pools.find(pool => pool.address === poolId)!;
-  const alert = snapshot.alerts.find(alert => alert.id === selectedAlert);
-  const selectedEvents = snapshot.events.filter(event => event.pool === poolId);
-  const poolRows = snapshot.pools.map(pool => {
-    const buys = snapshot.events.filter(event => event.pool === pool.address && event.kind === "buy");
-    return { ...pool, buys: buys.length, volume: buys.reduce((sum, event) => sum + (event.kind === "buy" ? BigInt(event.quoteLamports) : 0n), 0n), signals: snapshot.alerts.filter(alert => alert.pool === pool.address).length };
+  const pool = snapshot.pools.find((pool) => pool.address === poolId)!;
+  const alert = snapshot.alerts.find((alert) => alert.id === selectedAlert);
+  const selectedEvents = snapshot.events.filter((event) => event.pool === poolId);
+  const poolRows = snapshot.pools.map((pool) => {
+    const buys = snapshot.events.filter(
+      (event) => event.pool === pool.address && event.kind === "buy",
+    );
+    return {
+      ...pool,
+      buys: buys.length,
+      volume: buys.reduce(
+        (sum, event) => sum + (event.kind === "buy" ? BigInt(event.quoteLamports) : 0n),
+        0n,
+      ),
+      signals: snapshot.alerts.filter((alert) => alert.pool === pool.address).length,
+    };
   });
-  const filteredPools = poolRows.filter(pool => `${pool.name} ${pool.symbol} ${pool.address}`.toLowerCase().includes(query.toLowerCase()) && (poolFilter === "all" || pool.signals > 0)).sort((a, b) => sort === "name" ? a.name.localeCompare(b.name) : sort === "signals" ? b.signals - a.signals || a.name.localeCompare(b.name) : a.volume === b.volume ? a.name.localeCompare(b.name) : a.volume > b.volume ? -1 : 1);
-  const filteredAlerts = snapshot.alerts.filter(alert => (severity === "all" || alert.severity === severity) &&
-    `${alert.title} ${alert.pool}`.toLowerCase().includes(query.toLowerCase()));
+  const filteredPools = poolRows
+    .filter(
+      (pool) =>
+        `${pool.name} ${pool.symbol} ${pool.address}`.toLowerCase().includes(query.toLowerCase()) &&
+        (poolFilter === "all" || pool.signals > 0),
+    )
+    .sort((a, b) =>
+      sort === "name"
+        ? a.name.localeCompare(b.name)
+        : sort === "signals"
+          ? b.signals - a.signals || a.name.localeCompare(b.name)
+          : a.volume === b.volume
+            ? a.name.localeCompare(b.name)
+            : a.volume > b.volume
+              ? -1
+              : 1,
+    );
+  const filteredAlerts = snapshot.alerts.filter(
+    (alert) =>
+      (severity === "all" || alert.severity === severity) &&
+      `${alert.title} ${alert.pool}`.toLowerCase().includes(query.toLowerCase()),
+  );
+  const investigationPanelProps = {
+    snapshot,
+    filteredAlerts,
+    severity,
+    setSeverity,
+    selectedAlert,
+    setSelectedAlert,
+    alert,
+    savedIds,
+    toggleSaved,
+    exportReport,
+  };
 
   useEffect(() => {
     try {
       const saved = Number(localStorage.getItem("sentinel-sidebar-width"));
-      if (Number.isFinite(saved) && saved >= 44 && saved <= 360) setSidebarWidth(saved >= 132 ? 244 : 56);
-    } catch { /* Keep the default sidebar width when storage is unavailable. */ }
+      if (Number.isFinite(saved) && saved >= 44 && saved <= 360)
+        setSidebarWidth(saved >= 132 ? 244 : 56);
+    } catch {
+      /* Keep the default sidebar width when storage is unavailable. */
+    }
   }, []);
-
-  useEffect(() => {
-    try {
-      const saved = JSON.parse(localStorage.getItem("sentinel-saved-investigations") ?? "[]");
-      if (Array.isArray(saved)) setSavedIds(saved.filter((id): id is string => typeof id === "string"));
-    } catch { /* Saved investigations are optional when browser storage is unavailable. */ }
-  }, []);
-
-  function toggleSaved(id: string) {
-    const next = savedIds.includes(id) ? savedIds.filter(item => item !== id) : [...savedIds, id];
-    setSavedIds(next);
-    try { localStorage.setItem("sentinel-saved-investigations", JSON.stringify(next)); } catch { /* Keep the current session usable. */ }
-  }
 
   function persistSidebarWidth(width: number) {
     const next = width >= 132 ? 244 : 56;
     setSidebarWidth(next);
-    try { localStorage.setItem("sentinel-sidebar-width", String(next)); } catch { /* Resizing still works when storage is unavailable. */ }
+    try {
+      localStorage.setItem("sentinel-sidebar-width", String(next));
+    } catch {
+      /* Resizing still works when storage is unavailable. */
+    }
   }
 
   async function runReplay() {
-    setPending(true); setError(""); setResult(null);
+    setPending(true);
+    setError("");
+    setResult(null);
     try {
-      const response = await fetch("/api/investigations/replay", { method: "POST", headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ pool: poolId, through: pool.createdAt + cutoff }) });
+      const response = await fetch("/api/investigations/replay", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ pool: poolId, through: pool.createdAt + cutoff }),
+      });
       const data = await response.json();
       if (!response.ok) throw new Error(data.error ?? "Replay failed");
       setResult(data);
-    } catch { setError("We couldn’t complete the replay right now. Please try again in a moment."); }
-    finally { setPending(false); }
+    } catch {
+      setError("We couldn’t complete the replay right now. Please try again in a moment.");
+    } finally {
+      setPending(false);
+    }
   }
 
   function exportReport() {
     if (!alert) return;
-    const blob = new Blob([JSON.stringify({ coverage: snapshot.coverage, alert,
-      events: snapshot.events.filter(event => alert.evidence.includes(event.id)) }, null, 2)], { type: "application/json" });
+    const blob = new Blob(
+      [
+        JSON.stringify(
+          {
+            coverage: snapshot.coverage,
+            alert,
+            events: snapshot.events.filter((event) => alert.evidence.includes(event.id)),
+          },
+          null,
+          2,
+        ),
+      ],
+      { type: "application/json" },
+    );
     const url = URL.createObjectURL(blob);
-    const link = document.createElement("a"); link.href = url; link.download = `sentinel-${alert.id}.json`; link.click();
+    const link = document.createElement("a");
+    link.href = url;
+    link.download = `sentinel-${alert.id}.json`;
+    link.click();
     setTimeout(() => URL.revokeObjectURL(url), 1000);
   }
 
-  function poolTable() {
-    return <section className="panel pools-panel"><div className="panel-heading"><div className="heading-inline"><h2>Launches</h2><span className="count-label">{filteredPools.length}</span></div><div className="table-controls"><div className="metric-switch" role="group" aria-label="Filter pools"><button aria-pressed={poolFilter === "all"} onClick={() => setPoolFilter("all")}>All pools</button><button aria-pressed={poolFilter === "flagged"} onClick={() => setPoolFilter("flagged")}>With signals</button></div><select value={sort} aria-label="Sort pools" onChange={event => setSort(event.target.value as typeof sort)}><option value="volume">Volume: high to low</option><option value="signals">Most signals</option><option value="name">Name: A–Z</option></select></div></div>
-      <div className="table-scroll"><table><thead><tr><th>Token / pool</th><th className="numeric">Purchases</th><th className="numeric">Buy volume</th><th>Detection status</th><th className="row-action-heading">Action</th></tr></thead><tbody>
-        {filteredPools.map(pool => {
-          const index = snapshot.pools.findIndex(item => item.address === pool.address);
-          const amount = pool.volume;
-          const count = pool.signals;
-          return <tr key={pool.address}><td><div className="token-cell"><span className={`token token-${index}`}>{pool.symbol.slice(0, 1)}</span><div><strong>{pool.name} <small>{pool.symbol}</small></strong><code>{pool.address}</code></div></div></td>
-            <td className="numeric">{pool.buys}</td><td className="numeric volume-cell">{sol(amount.toString())} <span className="subtle">SOL</span></td>
-            <td><span className={`badge ${count ? "amber" : "neutral"}`}><i/>{count ? `${count} signals` : "No signals"}</span></td>
-            <td className="row-action"><button className="text-button" onClick={() => { setPoolId(pool.address); setResult(null); setView("Launch Autopsy"); }}>Investigate <Icon name="arrow" size={14}/></button></td></tr>;
-        })}
-      </tbody></table>{!filteredPools.length && <p className="empty">No pools match your filters.</p>}</div><div className="table-foot"><span>{filteredPools.length} of {snapshot.pools.length} sample pools</span><span>Meteora DBC · Finalized fixtures</span></div>
-    </section>;
-  }
-
-  function launchBoard() {
-    const groups = [
-      { title: "Needs investigation", pools: filteredPools.filter(pool => pool.signals > 0), type: "review" },
-      { title: "No signals detected", pools: filteredPools.filter(pool => pool.signals === 0), type: "clear" },
-    ];
-    return <section className="launch-board" aria-label="Launches grouped by detection status">
-      {groups.map(group => <div className="launch-column" key={group.type}>
-        <div className="launch-column-heading"><span className={`launch-column-dot ${group.type}`}/><h2>{group.title}</h2><span className="count-label">{group.pools.length}</span></div>
-        <div className="launch-column-cards">{group.pools.map(pool => {
-          const index = snapshot.pools.findIndex(item => item.address === pool.address);
-          return <article className="launch-card" key={pool.address}>
-            <div className="launch-card-top"><span className={`token token-${index}`}>{pool.symbol.slice(0, 1)}</span><span>{pool.symbol}</span><span className={`badge ${pool.signals ? "amber" : "neutral"}`}>{pool.signals ? `${pool.signals} signals` : "No signals"}</span></div>
-            <h3>{pool.name}</h3><code>{pool.address}</code>
-            <div className="launch-card-metrics"><div><span>Buy volume</span><strong>{sol(pool.volume.toString())} SOL</strong></div><div><span>Purchases</span><strong>{pool.buys}</strong></div></div>
-            <button className="launch-card-action" onClick={() => { setPoolId(pool.address); setResult(null); setView("Launch Autopsy"); }}>Investigate <Icon name="arrow" size={14}/></button>
-          </article>;
-        })}{group.pools.length === 0 && <p className="launch-column-empty">No matching launches.</p>}</div>
-      </div>)}
-    </section>;
-  }
-
-  function alertsPanel() {
-    return <section className="panel"><div className="panel-heading"><div><span className="eyebrow">DETECTION ENGINE</span><h2>Signals to investigate</h2></div>
-      <select aria-label="Filter alerts by severity" value={severity} onChange={event => setSeverity(event.target.value)}><option value="all">All severities</option><option value="high">High</option><option value="medium">Medium</option></select></div>
-      <div className="alert-list">{filteredAlerts.map(alert => <button key={alert.id} className={`alert-row ${selectedAlert === alert.id ? "selected" : ""}`} onClick={() => setSelectedAlert(alert.id)}>
-        <span className={`signal-icon ${alert.severity}`}>!</span><span className="alert-copy"><strong>{alert.title}</strong><span>{alert.pool} · rule v{alert.rule.version}</span></span><span className={`badge ${alert.severity === "high" ? "amber" : "neutral"}`}>{alert.severity}</span><span className="arrow">↗</span>
-      </button>)}{!filteredAlerts.length && <p className="empty">No alerts match your filters.</p>}</div>
-    </section>;
-  }
-
-  function evidencePanel() {
-    return <section className="panel evidence"><div className="panel-heading"><div><span className="eyebrow">EVIDENCE FIRST</span><h2>Investigation brief</h2></div><span className="mini-icon">⌕</span></div>
-      {alert ? <div className="evidence-body"><div className="brief-title"><span className="badge amber">Requires investigation</span><h3>{alert.title}</h3></div>
-        <span className="eyebrow">OBSERVATION</span><p>{alert.observation}</p><span className="eyebrow">HEURISTIC INTERPRETATION</span><p>{alert.interpretation}</p>
-        <div className="note">Template summary · No AI model connected</div><div className="evidence-meta"><span>Rule version</span><code>{alert.rule.version}</code><span>Evidence records</span><strong>{alert.evidence.length}</strong></div>
-        <details><summary>Inspect transaction evidence</summary><ul className="evidence-list">{snapshot.events.filter(event => alert.evidence.includes(event.id)).map(event => <li key={event.id}><strong>{event.kind}</strong><code>{event.signature}</code><span>{time(event.timestamp)} UTC · slot {event.slot}</span></li>)}</ul></details>
-        <button className="secondary full" onClick={() => toggleSaved(alert.id)}><Icon name="bookmark" size={15}/>{savedIds.includes(alert.id) ? "Unsave investigation" : "Save investigation"}</button>
-        <button className="secondary full" onClick={exportReport}>Export evidence JSON ↓</button><p className="fine-print">Synthetic signatures cannot be verified on a blockchain explorer. Shared funding alone does not prove coordination.</p>
-      </div> : <p className="empty">Select an alert to inspect its evidence.</p>}
-    </section>;
-  }
-
-  function eventLabel(event: Event) {
-    if (event.kind === "pool_created") return "DBC pool created";
-    if (event.kind === "buy") return `${sol(event.quoteLamports)} SOL buy · ${event.wallet}`;
-    if (event.kind === "funding") return `Funding link · ${event.source} → ${event.wallet}`;
-    return `${sol(event.lamports)} SOL transfer · ${event.wallet} → ${event.recipient}`;
-  }
-
-  return <SidebarProvider open={sidebarWidth >= 132} onOpenChange={open => persistSidebarWidth(open ? 244 : 56)}><div className="app-shell dashboard-shell" data-sidebar-collapsed={sidebarWidth < 132} style={{ "--sidebar-width": `${sidebarWidth}px` } as CSSProperties}><a className="dashboard-skip" href="#dashboard-content">Skip to dashboard</a><header className="topbar"><SidebarTrigger className="sidebar-window-trigger"/><a href="/" className="dashboard-navbar-brand dashboard-mobile-brand" aria-label="Sentinel home"><BrandLogo size={30}/></a><div className="breadcrumb"><Icon name="grid" size={16}/>Workspace <span>/</span> <strong>{views.find(item => item.name === view)?.label ?? view}</strong></div><CommandPalette snapshot={snapshot} onView={nextView => { setView(nextView); setQuery(""); }} onPool={(id, search) => { setPoolId(id); setQuery(search); setView("Launches"); }} onAlert={(id, search) => { setSelectedAlert(id); setQuery(search); setView("Alerts"); }}/><div className="topbar-actions"><ThemeToggle/><button type="button" className="dashboard-notifications" aria-label="View detection signals" onClick={() => setView("Alerts")}><Icon name="bell" size={19}/>{snapshot.alerts.length > 0 && <i/>}</button></div></header><Sidebar><SidebarHeader><a href="/" aria-label="Sentinel home"><BrandLogo size={32}/><span className="sidebar-brand-copy"><strong>Sentinel</strong><small>Launch intelligence</small></span></a></SidebarHeader><SidebarContent><nav aria-label="Dashboard navigation">{["Monitor", "Investigate", "Analyze", "Workspace"].map(group => <SidebarGroup key={group}><SidebarGroupLabel>{group}</SidebarGroupLabel><SidebarMenu>{views.filter(item => item.group === group).map(item => <SidebarMenuItem key={item.name}><SidebarMenuButton tooltip={item.label} isActive={view === item.name} title={item.label} aria-label={item.name} aria-current={view === item.name ? "page" : undefined} onClick={() => { setView(item.name); setQuery(""); }}><Icon name={item.icon} size={18}/><span className="nav-text">{item.label}</span>{item.name === "Alerts" && <b>{snapshot.alerts.length}</b>}</SidebarMenuButton></SidebarMenuItem>)}</SidebarMenu></SidebarGroup>)}</nav></SidebarContent><SidebarFooter><a href="/api/pools" target="_blank" rel="noreferrer" title="Developer API"><Icon name="code" size={16}/><span>Developer API ↗</span></a><SidebarProfile onSettings={() => setView("Settings")}/></SidebarFooter></Sidebar>
-    <div className="main-shell">
-      <main id="dashboard-content"><div className="page-heading"><div><h1>{views.find(item => item.name === view)?.label ?? view}</h1><p>{view === "Overview" ? "Launch intelligence, backed by evidence." : view === "Launch Autopsy" ? "Replay a launch and trace each finding to its evidence." : "Explore activity and the evidence behind each signal."}</p></div><div className="dashboard-heading-actions"><span className="dashboard-sample-window"><Icon name="calendar" size={17}/>Sample window</span><button className="primary" onClick={() => { setView("Launch Autopsy"); setQuery(""); }}><Icon name="replay" size={15}/> Replay launch</button></div></div>
-        {view === "Overview" && <DashboardOverview snapshot={snapshot} onLaunch={id => { setPoolId(id); setResult(null); setView("Launch Autopsy"); }} onEvidence={item => { setSelectedAlert(item.id); setView("Alerts"); }} onLaunches={() => setView("Launches")} onAlerts={() => setView("Alerts")} onGraph={() => setView("Wallet Graph")}/>}
-        {view === "DBC Explorer" && poolTable()}
-        {view === "Analytics" && <><ActivityChart snapshot={snapshot}/><WalletGraph snapshot={snapshot}/></>}
-        {view === "Funding Graph" && <WalletGraph key="funding" snapshot={snapshot} initialFilter="funding"/>}
-        {view === "Anomaly Engine" && <div className="investigation-grid"><div>{alertsPanel()}</div>{evidencePanel()}</div>}
-        {(["Whale Tracker", "Holder Concentration", "Liquidity Monitor", "Saved investigations", "Settings"] as View[]).includes(view) && <DashboardModule view={view as ModuleView} snapshot={snapshot} savedIds={savedIds} onEvidence={item => { setSelectedAlert(item.id); setView("Alerts"); }}/>}
-        {view === "Launches" && launchBoard()}
-        {view === "Alerts" && <div className="investigation-grid"><div>{alertsPanel()}</div>{evidencePanel()}</div>}
-        {view === "Wallet Graph" && <><WalletGraph snapshot={snapshot}/><div className="investigation-grid"><div>{alertsPanel()}</div>{evidencePanel()}</div></>}
-        {view === "Launch Autopsy" && <div className="replay-grid"><section className="panel replay-controls"><span className="eyebrow">HISTORICAL REPLAY</span><h2>Follow the first 90 seconds.</h2><p className="subtle">Select a pool and an observation window. The same events and rule version produce the same digest.</p>
-          <label>Pool<select disabled={pending} value={poolId} onChange={event => { setPoolId(event.target.value); setResult(null); }}>{snapshot.pools.map(pool => <option key={pool.address} value={pool.address}>{pool.name} / {pool.symbol}</option>)}</select></label>
-          <label>Seconds after creation <strong>{cutoff}s</strong><input disabled={pending} type="range" min="0" max="90" value={cutoff} onChange={event => { setCutoff(Number(event.target.value)); setResult(null); }}/></label><button className="primary full" disabled={pending} onClick={runReplay}>{pending ? "Replaying events…" : "Run deterministic replay ↗"}</button>
-          <div aria-live="polite">{error && <p className="error" role="alert">{error}</p>}{result && <div className="replay-result"><span className="badge green">Replay complete</span><h3>{result.alerts.length} signals · {result.eventCount} events</h3><p>Rule version {result.ruleVersion}</p><span className="eyebrow">SHA-256 DATASET + RULE DIGEST</span><code>{result.digest}</code>{result.alerts.map(alert => <p key={alert.id}>{alert.title}</p>)}</div>}</div></section>
-          <section className="panel"><div className="panel-heading"><div><span className="eyebrow">{pool.symbol} / EVENT TIMELINE</span><h2>Launch reconstruction</h2></div><span className="badge neutral">0–{cutoff}s</span></div><ol className="timeline">{selectedEvents.filter(event => event.timestamp <= pool.createdAt + cutoff).map(event => <li key={event.id}><time>00:{String(event.timestamp - pool.createdAt).padStart(2, "0")}</time><span className={`timeline-dot ${event.kind}`}/><div><strong>{eventLabel(event)}</strong><code>{event.signature}</code><small>Finalized fixture · slot {event.slot}</small></div></li>)}</ol></section></div>}
-        <footer><span>Sentinel AI <span className="footer-dot">·</span> Evidence-first intelligence</span><span>Research tool. Signals are not proof of wrongdoing.</span></footer>
-      </main></div></div></SidebarProvider>;
+  return (
+    <SidebarProvider
+      open={sidebarWidth >= 132}
+      onOpenChange={(open) => persistSidebarWidth(open ? 244 : 56)}
+    >
+      <div
+        className="app-shell dashboard-shell"
+        data-sidebar-collapsed={sidebarWidth < 132}
+        style={{ "--sidebar-width": `${sidebarWidth}px` } as CSSProperties}
+      >
+        <a className="dashboard-skip" href="#dashboard-content">
+          Skip to dashboard
+        </a>
+        <DashboardNavigation
+          snapshot={snapshot}
+          view={view}
+          setView={setView}
+          setQuery={setQuery}
+          setPoolId={setPoolId}
+          setSelectedAlert={setSelectedAlert}
+        />
+        <div className="main-shell">
+          <main id="dashboard-content">
+            <div className="page-heading">
+              <div>
+                <h1>{views.find((item) => item.name === view)?.label ?? view}</h1>
+                <p>
+                  {view === "Overview"
+                    ? "Launch intelligence, backed by evidence."
+                    : view === "Launch Autopsy"
+                      ? "Replay a launch and trace each finding to its evidence."
+                      : "Explore activity and the evidence behind each signal."}
+                </p>
+              </div>
+              <div className="dashboard-heading-actions">
+                <span className="dashboard-sample-window">
+                  <Icon name="calendar" size={17} />
+                  {snapshot.coverage.mode === "fixture" ? "Fixture window" : "Finalized window"}
+                </span>
+                <button
+                  className="primary"
+                  onClick={() => {
+                    setView("Launch Autopsy");
+                    setQuery("");
+                  }}
+                >
+                  <Icon name="replay" size={15} /> Replay launch
+                </button>
+              </div>
+            </div>
+            <p className="fine-print" role="status">
+              {snapshot.coverage.mode === "fixture"
+                ? "Fixture evidence · live monitoring is not connected."
+                : snapshot.coverage.freshness === "fresh"
+                  ? `Live finalized Solana data · slot ${snapshot.coverage.asOfSlot ?? "unknown"}.`
+                  : `Finalized Solana data · feed ${snapshot.coverage.freshness ?? "status unknown"} · coverage is partial.`}
+            </p>
+            {error && <p role="alert">{error}</p>}
+            {view === "Overview" && (
+              <DashboardOverview
+                snapshot={snapshot}
+                onLaunch={(id) => {
+                  setPoolId(id);
+                  setResult(null);
+                  setView("Launch Autopsy");
+                }}
+                onEvidence={(item) => {
+                  setSelectedAlert(item.id);
+                  setView("Alerts");
+                }}
+                onLaunches={() => setView("Launches")}
+                onAlerts={() => setView("Alerts")}
+                onGraph={() => setView("Wallet Graph")}
+              />
+            )}
+            {view === "DBC Explorer" && (
+              <PoolTable
+                snapshot={snapshot}
+                filteredPools={filteredPools}
+                poolFilter={poolFilter}
+                setPoolFilter={setPoolFilter}
+                sort={sort}
+                setSort={setSort}
+                setPoolId={setPoolId}
+                setResult={setResult}
+                setView={setView}
+              />
+            )}
+            {view === "Analytics" && (
+              <>
+                <ActivityChart snapshot={snapshot} />
+                <WalletGraph snapshot={snapshot} />
+              </>
+            )}
+            {view === "Funding Graph" && (
+              <WalletGraph key="funding" snapshot={snapshot} initialFilter="funding" />
+            )}
+            {view === "Anomaly Engine" && <InvestigationPanels {...investigationPanelProps} />}
+            {(
+              [
+                "Whale Tracker",
+                "Holder Concentration",
+                "Liquidity Monitor",
+                "Saved investigations",
+                "Settings",
+              ] as View[]
+            ).includes(view) && (
+              <DashboardModule
+                view={view as ModuleView}
+                snapshot={snapshot}
+                savedIds={savedIds}
+                onEvidence={(item) => {
+                  setSelectedAlert(item.id);
+                  setView("Alerts");
+                }}
+              />
+            )}
+            {view === "Launches" && (
+              <LaunchBoard
+                snapshot={snapshot}
+                filteredPools={filteredPools}
+                setPoolId={setPoolId}
+                setResult={setResult}
+                setView={setView}
+              />
+            )}
+            {view === "Alerts" && <InvestigationPanels {...investigationPanelProps} />}
+            {view === "Wallet Graph" && (
+              <>
+                <WalletGraph snapshot={snapshot} />
+                <InvestigationPanels {...investigationPanelProps} />
+              </>
+            )}
+            {view === "Launch Autopsy" && (
+              <LaunchReplay
+                snapshot={snapshot}
+                pool={pool}
+                poolId={poolId}
+                selectedEvents={selectedEvents}
+                cutoff={cutoff}
+                pending={pending}
+                error={error}
+                result={result}
+                setPoolId={setPoolId}
+                setResult={setResult}
+                setCutoff={setCutoff}
+                runReplay={runReplay}
+              />
+            )}
+            <footer>
+              <span>
+                Sentinel AI <span className="footer-dot">·</span> Evidence-first intelligence
+              </span>
+              <span>Research tool. Signals are not proof of wrongdoing.</span>
+            </footer>
+          </main>
+        </div>
+      </div>
+    </SidebarProvider>
+  );
 }
