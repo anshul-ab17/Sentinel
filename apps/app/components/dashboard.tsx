@@ -4,18 +4,35 @@ import { BrandLogo } from "@app/components/brand-logo";
 import type { Snapshot } from "@shared/snapshot";
 import type { Alert, Event } from "@shared/events";
 import { ThemeToggle } from "@app/components/theme-toggle";
-import { Icon } from "@app/components/icon";
+import { Icon, type IconName } from "@app/components/icon";
+import { DashboardModule, type ModuleView } from "@app/components/dashboard-module";
+import { SidebarProfile } from "@app/components/sidebar-profile";
+import { SidebarProvider, Sidebar, SidebarHeader, SidebarContent, SidebarFooter, SidebarGroup, SidebarGroupLabel, SidebarMenu, SidebarMenuItem, SidebarMenuButton, SidebarTrigger } from "@app/components/ui/sidebar";
 import { ActivityChart } from "@app/components/activity-chart";
 import { CommandPalette } from "@app/components/command-palette";
 import { WalletGraph } from "@app/components/wallet-graph";
+import { DashboardOverview } from "@app/components/dashboard-overview";
 import "@app/app/dashboard/dashboard.css";
-import { useEffect, useRef, useState, type CSSProperties } from "react";
+import "@app/app/dashboard/premium-dashboard.css";
+import "@app/app/dashboard/reference-dashboard.css";
+import { useEffect, useState, type CSSProperties } from "react";
 
 type ReplayResult = { digest: string; eventCount: number; alerts: Alert[]; ruleVersion: string };
-type View = "Overview" | "Launches" | "Alerts" | "Wallet Graph" | "Launch Autopsy";
-const views: { name: View; icon: "grid" | "launch" | "signal" | "replay" | "graph" }[] = [
-  { name: "Overview", icon: "grid" }, { name: "Launches", icon: "launch" },
-  { name: "Alerts", icon: "signal" }, { name: "Wallet Graph", icon: "graph" }, { name: "Launch Autopsy", icon: "replay" },
+type View = "Overview" | "Launches" | "Alerts" | "Wallet Graph" | "Launch Autopsy" | "DBC Explorer" | "Analytics" | "Funding Graph" | "Anomaly Engine" | ModuleView;
+const views: { name: View; label: string; group: string; icon: IconName }[] = [
+  { name: "Overview", label: "Overview", group: "Monitor", icon: "grid" },
+  { name: "Launches", label: "Launch Radar", group: "Monitor", icon: "launch" },
+  { name: "DBC Explorer", label: "DBC Explorer", group: "Monitor", icon: "database" },
+  { name: "Alerts", label: "Smart Alerts", group: "Monitor", icon: "bell" },
+  { name: "Launch Autopsy", label: "Token Dossier", group: "Investigate", icon: "replay" },
+  { name: "Wallet Graph", label: "Wallet Intelligence", group: "Investigate", icon: "wallet" },
+  { name: "Funding Graph", label: "Funding Graph", group: "Investigate", icon: "network" },
+  { name: "Whale Tracker", label: "Whale Tracker", group: "Investigate", icon: "whale" },
+  { name: "Anomaly Engine", label: "Anomaly Engine", group: "Analyze", icon: "signal" },
+  { name: "Holder Concentration", label: "Holder Concentration", group: "Analyze", icon: "pie" },
+  { name: "Liquidity Monitor", label: "Liquidity Monitor", group: "Analyze", icon: "drop" },
+  { name: "Analytics", label: "Analytics", group: "Analyze", icon: "graph" },
+  { name: "Saved investigations", label: "Saved investigations", group: "Workspace", icon: "bookmark" },
 ];
 const sol = (amount: string) => (Number(BigInt(amount) / 1000000n) / 1000).toLocaleString("en-US", { maximumFractionDigits: 3 });
 const time = (timestamp: number) => new Date(timestamp * 1000).toISOString().slice(11, 19);
@@ -32,10 +49,8 @@ export function Dashboard({ snapshot }: { snapshot: Snapshot }) {
   const [result, setResult] = useState<ReplayResult | null>(null);
   const [pending, setPending] = useState(false);
   const [error, setError] = useState("");
-  const [sidebarWidth, setSidebarWidth] = useState(212);
-  const [isResizingSidebar, setIsResizingSidebar] = useState(false);
-  const resizingSidebar = useRef(false);
-  const sidebarResizeOffset = useRef(0);
+  const [savedIds, setSavedIds] = useState<string[]>([]);
+  const [sidebarWidth, setSidebarWidth] = useState(244);
   const pool = snapshot.pools.find(pool => pool.address === poolId)!;
   const alert = snapshot.alerts.find(alert => alert.id === selectedAlert);
   const selectedEvents = snapshot.events.filter(event => event.pool === poolId);
@@ -46,24 +61,31 @@ export function Dashboard({ snapshot }: { snapshot: Snapshot }) {
   const filteredPools = poolRows.filter(pool => `${pool.name} ${pool.symbol} ${pool.address}`.toLowerCase().includes(query.toLowerCase()) && (poolFilter === "all" || pool.signals > 0)).sort((a, b) => sort === "name" ? a.name.localeCompare(b.name) : sort === "signals" ? b.signals - a.signals || a.name.localeCompare(b.name) : a.volume === b.volume ? a.name.localeCompare(b.name) : a.volume > b.volume ? -1 : 1);
   const filteredAlerts = snapshot.alerts.filter(alert => (severity === "all" || alert.severity === severity) &&
     `${alert.title} ${alert.pool}`.toLowerCase().includes(query.toLowerCase()));
-  const buys = snapshot.events.filter(event => event.kind === "buy");
-  const total = buys.reduce((sum, event) => sum + BigInt(event.quoteLamports), 0n);
 
   useEffect(() => {
     try {
       const saved = Number(localStorage.getItem("sentinel-sidebar-width"));
-      if (Number.isFinite(saved) && saved >= 44 && saved <= 360) setSidebarWidth(saved);
+      if (Number.isFinite(saved) && saved >= 44 && saved <= 360) setSidebarWidth(saved >= 132 ? 244 : 56);
     } catch { /* Keep the default sidebar width when storage is unavailable. */ }
   }, []);
 
-  function persistSidebarWidth(width: number) {
-    const next = Math.min(360, Math.max(44, width));
-    setSidebarWidth(next);
-    try { localStorage.setItem("sentinel-sidebar-width", String(next)); } catch { /* Resizing still works when storage is unavailable. */ }
+  useEffect(() => {
+    try {
+      const saved = JSON.parse(localStorage.getItem("sentinel-saved-investigations") ?? "[]");
+      if (Array.isArray(saved)) setSavedIds(saved.filter((id): id is string => typeof id === "string"));
+    } catch { /* Saved investigations are optional when browser storage is unavailable. */ }
+  }, []);
+
+  function toggleSaved(id: string) {
+    const next = savedIds.includes(id) ? savedIds.filter(item => item !== id) : [...savedIds, id];
+    setSavedIds(next);
+    try { localStorage.setItem("sentinel-saved-investigations", JSON.stringify(next)); } catch { /* Keep the current session usable. */ }
   }
 
-  function resizeSidebar(event: React.PointerEvent<HTMLDivElement>) {
-    if (resizingSidebar.current) setSidebarWidth(Math.min(360, Math.max(44, event.clientX - sidebarResizeOffset.current)));
+  function persistSidebarWidth(width: number) {
+    const next = width >= 132 ? 244 : 56;
+    setSidebarWidth(next);
+    try { localStorage.setItem("sentinel-sidebar-width", String(next)); } catch { /* Resizing still works when storage is unavailable. */ }
   }
 
   async function runReplay() {
@@ -136,9 +158,10 @@ export function Dashboard({ snapshot }: { snapshot: Snapshot }) {
   function evidencePanel() {
     return <section className="panel evidence"><div className="panel-heading"><div><span className="eyebrow">EVIDENCE FIRST</span><h2>Investigation brief</h2></div><span className="mini-icon">⌕</span></div>
       {alert ? <div className="evidence-body"><div className="brief-title"><span className="badge amber">Requires investigation</span><h3>{alert.title}</h3></div>
-        <span className="eyebrow">OBSERVATION · SYNTHETIC DATA</span><p>{alert.observation}</p><span className="eyebrow">HEURISTIC INTERPRETATION</span><p>{alert.interpretation}</p>
+        <span className="eyebrow">OBSERVATION</span><p>{alert.observation}</p><span className="eyebrow">HEURISTIC INTERPRETATION</span><p>{alert.interpretation}</p>
         <div className="note">Template summary · No AI model connected</div><div className="evidence-meta"><span>Rule version</span><code>{alert.rule.version}</code><span>Evidence records</span><strong>{alert.evidence.length}</strong></div>
         <details><summary>Inspect transaction evidence</summary><ul className="evidence-list">{snapshot.events.filter(event => alert.evidence.includes(event.id)).map(event => <li key={event.id}><strong>{event.kind}</strong><code>{event.signature}</code><span>{time(event.timestamp)} UTC · slot {event.slot}</span></li>)}</ul></details>
+        <button className="secondary full" onClick={() => toggleSaved(alert.id)}><Icon name="bookmark" size={15}/>{savedIds.includes(alert.id) ? "Unsave investigation" : "Save investigation"}</button>
         <button className="secondary full" onClick={exportReport}>Export evidence JSON ↓</button><p className="fine-print">Synthetic signatures cannot be verified on a blockchain explorer. Shared funding alone does not prove coordination.</p>
       </div> : <p className="empty">Select an alert to inspect its evidence.</p>}
     </section>;
@@ -151,27 +174,15 @@ export function Dashboard({ snapshot }: { snapshot: Snapshot }) {
     return `${sol(event.lamports)} SOL transfer · ${event.wallet} → ${event.recipient}`;
   }
 
-  return <div className="app-shell dashboard-shell" data-sidebar-collapsed={sidebarWidth < 132} data-sidebar-min={sidebarWidth === 44} data-sidebar-resizing={isResizingSidebar} style={{ "--sidebar-width": `${sidebarWidth}px` } as CSSProperties}><a className="dashboard-skip" href="#dashboard-content">Skip to dashboard</a><header className="topbar"><a href="/" className="dashboard-navbar-brand" aria-label="Sentinel home"><BrandLogo size={30}/><span>Sentinel</span></a><div className="breadcrumb">Workspace <span>/</span> <strong>{view}</strong></div><CommandPalette snapshot={snapshot} onView={nextView => { setView(nextView); setQuery(""); }} onPool={(id, search) => { setPoolId(id); setQuery(search); setView("Launches"); }} onAlert={(id, search) => { setSelectedAlert(id); setQuery(search); setView("Alerts"); }}/><div className="topbar-actions"><span className="demo-pill"><span className="status-dot"/> Demo data</span><ThemeToggle /></div></header><aside className="sidebar">
-    <nav aria-label="Dashboard navigation">{views.map(item => <button key={item.name} title={item.name} aria-label={item.name} className={view === item.name ? "active" : ""} onClick={() => { setView(item.name); setQuery(""); }} aria-current={view === item.name ? "page" : undefined}><Icon name={item.icon} size={18}/><span className="nav-text">{item.name}</span>{item.name === "Alerts" && <b>{snapshot.alerts.length}</b>}</button>)}</nav>
-    <div className="sidebar-bottom"><div className="network" title="Solana / Meteora DBC · Demo environment"><span className="status-dot"/><div>Solana / Meteora DBC<small>Demo environment</small></div></div><a href="/api/pools" target="_blank" rel="noreferrer" title="Developer API"><Icon name="code" size={16}/><span>Developer API ↗</span></a><p>See the launch.<br/>Verify the evidence.</p><div className="workspace" title="Research workspace · Personal workspace"><span className="workspace-icon">S</span><div>Research workspace<small>Personal workspace</small></div></div></div></aside>
-    <div className="sidebar-resizer" role="separator" aria-label="Resize sidebar" aria-orientation="vertical" aria-valuemin={44} aria-valuemax={360} aria-valuenow={sidebarWidth} tabIndex={0} onPointerDown={event => { resizingSidebar.current = true; setIsResizingSidebar(true); sidebarResizeOffset.current = event.clientX - sidebarWidth; event.currentTarget.setPointerCapture(event.pointerId); }} onPointerMove={resizeSidebar} onPointerUp={event => { resizingSidebar.current = false; setIsResizingSidebar(false); persistSidebarWidth(event.clientX - sidebarResizeOffset.current); }} onPointerCancel={() => { resizingSidebar.current = false; setIsResizingSidebar(false); }} onKeyDown={event => { if (event.key === "ArrowLeft" || event.key === "ArrowRight") { event.preventDefault(); persistSidebarWidth(sidebarWidth + (event.key === "ArrowRight" ? 12 : -12)); } if (event.key === "Home") { event.preventDefault(); persistSidebarWidth(44); } if (event.key === "End") { event.preventDefault(); persistSidebarWidth(360); } }}/>
+  return <SidebarProvider open={sidebarWidth >= 132} onOpenChange={open => persistSidebarWidth(open ? 244 : 56)}><div className="app-shell dashboard-shell" data-sidebar-collapsed={sidebarWidth < 132} style={{ "--sidebar-width": `${sidebarWidth}px` } as CSSProperties}><a className="dashboard-skip" href="#dashboard-content">Skip to dashboard</a><header className="topbar"><SidebarTrigger className="sidebar-window-trigger"/><a href="/" className="dashboard-navbar-brand dashboard-mobile-brand" aria-label="Sentinel home"><BrandLogo size={30}/></a><div className="breadcrumb"><Icon name="grid" size={16}/>Workspace <span>/</span> <strong>{views.find(item => item.name === view)?.label ?? view}</strong></div><CommandPalette snapshot={snapshot} onView={nextView => { setView(nextView); setQuery(""); }} onPool={(id, search) => { setPoolId(id); setQuery(search); setView("Launches"); }} onAlert={(id, search) => { setSelectedAlert(id); setQuery(search); setView("Alerts"); }}/><div className="topbar-actions"><ThemeToggle/><button type="button" className="dashboard-notifications" aria-label="View detection signals" onClick={() => setView("Alerts")}><Icon name="bell" size={19}/>{snapshot.alerts.length > 0 && <i/>}</button></div></header><Sidebar><SidebarHeader><a href="/" aria-label="Sentinel home"><BrandLogo size={32}/><span className="sidebar-brand-copy"><strong>Sentinel</strong><small>Launch intelligence</small></span></a></SidebarHeader><SidebarContent><nav aria-label="Dashboard navigation">{["Monitor", "Investigate", "Analyze", "Workspace"].map(group => <SidebarGroup key={group}><SidebarGroupLabel>{group}</SidebarGroupLabel><SidebarMenu>{views.filter(item => item.group === group).map(item => <SidebarMenuItem key={item.name}><SidebarMenuButton tooltip={item.label} isActive={view === item.name} title={item.label} aria-label={item.name} aria-current={view === item.name ? "page" : undefined} onClick={() => { setView(item.name); setQuery(""); }}><Icon name={item.icon} size={18}/><span className="nav-text">{item.label}</span>{item.name === "Alerts" && <b>{snapshot.alerts.length}</b>}</SidebarMenuButton></SidebarMenuItem>)}</SidebarMenu></SidebarGroup>)}</nav></SidebarContent><SidebarFooter><a href="/api/pools" target="_blank" rel="noreferrer" title="Developer API"><Icon name="code" size={16}/><span>Developer API ↗</span></a><SidebarProfile onSettings={() => setView("Settings")}/></SidebarFooter></Sidebar>
     <div className="main-shell">
-      <main id="dashboard-content"><div className="page-heading"><div><h1>{view}</h1><p>{view === "Overview" ? "Launch activity, wallet patterns, and the evidence behind them." : view === "Launch Autopsy" ? "Replay a launch and trace each finding to its evidence." : "Explore activity and the evidence behind each signal."}</p></div><button className="primary" onClick={() => { setView("Launch Autopsy"); setQuery(""); }}><Icon name="replay" size={15}/> Replay launch</button></div>
-        <div className="demo-banner"><span aria-hidden="true">ⓘ</span><p><strong>Demo workspace.</strong> Sample data for exploring Sentinel. Live monitoring and AI analysis are not connected.</p></div>
-        {view === "Overview" && <>
-          <div className="stats">
-            <article><span>Observed buy volume</span><strong>{sol(total.toString())}<em>SOL</em></strong><small>Across {buys.length} sample purchases</small></article>
-            <article><span>Tracked launches</span><strong>{snapshot.pools.length}</strong><small>Meteora DBC pools</small></article>
-            <article><span>Detection signals</span><strong>{snapshot.alerts.length}<span className="stat-tag">{snapshot.alerts.filter(alert => alert.severity === "high").length} high priority</span></strong><small>Rule-based findings for review</small></article>
-            <article><span>Evidence records</span><strong>{snapshot.events.length}</strong><small>Finalized synthetic events</small></article>
-          </div>
-          <div className="analytics-grid"><ActivityChart snapshot={snapshot}/><section className="panel distribution-panel"><div className="panel-heading"><div><h2>Volume by launch</h2><p>Share of observed buy volume</p></div></div><div className="distribution-list">{poolRows.map((pool, index) => {
-            const share = total > 0n ? Number(pool.volume * 10000n / total) / 100 : 0;
-            return <div className="distribution-row" key={pool.address}><div><span className={`distribution-dot pool-color-${index}`}/><strong>{pool.name}</strong><span>{sol(pool.volume.toString())} SOL</span></div><div className="distribution-track"><span className={`pool-color-${index}`} style={{ width: `${share}%` }}/></div><small>{share.toFixed(1)}% of total</small></div>;
-          })}</div><div className="distribution-note">Volume share describes activity, not token safety.</div></section></div>
-          {poolTable()}
-          <div className="investigation-grid"><div>{alertsPanel()}</div>{evidencePanel()}</div>
-        </>}
+      <main id="dashboard-content"><div className="page-heading"><div><h1>{views.find(item => item.name === view)?.label ?? view}</h1><p>{view === "Overview" ? "Launch intelligence, backed by evidence." : view === "Launch Autopsy" ? "Replay a launch and trace each finding to its evidence." : "Explore activity and the evidence behind each signal."}</p></div><div className="dashboard-heading-actions"><span className="dashboard-sample-window"><Icon name="calendar" size={17}/>Sample window</span><button className="primary" onClick={() => { setView("Launch Autopsy"); setQuery(""); }}><Icon name="replay" size={15}/> Replay launch</button></div></div>
+        {view === "Overview" && <DashboardOverview snapshot={snapshot} onLaunch={id => { setPoolId(id); setResult(null); setView("Launch Autopsy"); }} onEvidence={item => { setSelectedAlert(item.id); setView("Alerts"); }} onLaunches={() => setView("Launches")} onAlerts={() => setView("Alerts")} onGraph={() => setView("Wallet Graph")}/>}
+        {view === "DBC Explorer" && poolTable()}
+        {view === "Analytics" && <><ActivityChart snapshot={snapshot}/><WalletGraph snapshot={snapshot}/></>}
+        {view === "Funding Graph" && <WalletGraph key="funding" snapshot={snapshot} initialFilter="funding"/>}
+        {view === "Anomaly Engine" && <div className="investigation-grid"><div>{alertsPanel()}</div>{evidencePanel()}</div>}
+        {(["Whale Tracker", "Holder Concentration", "Liquidity Monitor", "Saved investigations", "Settings"] as View[]).includes(view) && <DashboardModule view={view as ModuleView} snapshot={snapshot} savedIds={savedIds} onEvidence={item => { setSelectedAlert(item.id); setView("Alerts"); }}/>}
         {view === "Launches" && launchBoard()}
         {view === "Alerts" && <div className="investigation-grid"><div>{alertsPanel()}</div>{evidencePanel()}</div>}
         {view === "Wallet Graph" && <><WalletGraph snapshot={snapshot}/><div className="investigation-grid"><div>{alertsPanel()}</div>{evidencePanel()}</div></>}
@@ -181,5 +192,5 @@ export function Dashboard({ snapshot }: { snapshot: Snapshot }) {
           <div aria-live="polite">{error && <p className="error" role="alert">{error}</p>}{result && <div className="replay-result"><span className="badge green">Replay complete</span><h3>{result.alerts.length} signals · {result.eventCount} events</h3><p>Rule version {result.ruleVersion}</p><span className="eyebrow">SHA-256 DATASET + RULE DIGEST</span><code>{result.digest}</code>{result.alerts.map(alert => <p key={alert.id}>{alert.title}</p>)}</div>}</div></section>
           <section className="panel"><div className="panel-heading"><div><span className="eyebrow">{pool.symbol} / EVENT TIMELINE</span><h2>Launch reconstruction</h2></div><span className="badge neutral">0–{cutoff}s</span></div><ol className="timeline">{selectedEvents.filter(event => event.timestamp <= pool.createdAt + cutoff).map(event => <li key={event.id}><time>00:{String(event.timestamp - pool.createdAt).padStart(2, "0")}</time><span className={`timeline-dot ${event.kind}`}/><div><strong>{eventLabel(event)}</strong><code>{event.signature}</code><small>Finalized fixture · slot {event.slot}</small></div></li>)}</ol></section></div>}
         <footer><span>Sentinel AI <span className="footer-dot">·</span> Evidence-first intelligence</span><span>Research tool. Signals are not proof of wrongdoing.</span></footer>
-      </main></div></div>;
+      </main></div></div></SidebarProvider>;
 }

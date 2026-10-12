@@ -2,6 +2,8 @@ import { BrandLogo } from "@app/components/brand-logo";
 import { LandingFaq } from "@app/components/landing-faq";
 import { LandingMotion } from "@app/components/landing-motion";
 import { WorkflowStack } from "@app/components/workflow-stack";
+import { ApproachAccordion } from "@app/components/approach-accordion";
+import { InvestigationWindow } from "@app/components/investigation-window";
 import type { Metadata } from "next";
 import Link from "next/link";
 import Image from "next/image";
@@ -10,6 +12,7 @@ import { LaunchPreview } from "@app/components/launch-preview";
 import { Icon } from "@app/components/icon";
 import { WalletConnect } from "@app/components/wallet-connect";
 import "./landing.css";
+
 
 export const metadata: Metadata = {
   title: "Sentinel · See the story behind the launch",
@@ -42,11 +45,10 @@ export default function Home() {
       </WorkflowStack>
 
       <section id="approach" className="landing-approach" aria-labelledby="approach-heading">
-        <div className="approach-copy"><p className="section-kicker">Built for a closer look</p><h2 id="approach-heading">A signal is<br/>just the start.</h2><p>A pattern gives you a question. The evidence helps you decide what to investigate next.</p>
-          <div className="approach-principles"><div><Icon name="check" size={16}/><span>Trace each finding to its source events.</span></div><div><Icon name="check" size={16}/><span>See the rule behind the signal.</span></div><div><Icon name="check" size={16}/><span>Keep observations separate from conclusions.</span></div></div>
+        <div className="approach-copy"><div><p className="section-kicker">Built for a closer look</p><h2 id="approach-heading">A signal is<br/>just the start.</h2></div><div className="approach-intro-detail"><p>A pattern gives you a question. The evidence helps you decide what to investigate next.</p>
           <Link href="/dashboard" className="landing-secondary">Take a closer look<Icon name="arrow" size={16}/></Link>
-        </div>
-        <div className="hero-product"><div className="product-window-bar"><span className="product-window-dots" aria-hidden="true"><i/><i/><i/></span><span>Sentinel / Investigation workspace</span><span className="product-window-status">Demo preview</span></div><div className="hero-product-body"><aside className="product-context"><div className="product-context-heading"><Icon name="shield" size={18}/><strong>Follow the evidence.</strong></div><p>An investigation begins with a question.</p><div className="product-question">Who’s behind the early buying?</div><div className="product-context-steps"><span><Icon name="check" size={15}/>Explore the launch</span><span><Icon name="check" size={15}/>Trace funding links</span><span><Icon name="check" size={15}/>Inspect the finding</span></div><Link href="/dashboard">Try it in the dashboard<Icon name="arrow" size={15}/></Link><small>Synthetic events. Real detection rules.</small></aside><div className="hero-visual"><LaunchPreview/></div></div></div>
+        </div></div>
+        <InvestigationWindow sentinel={<ApproachAccordion/>}><div className="hero-product-body"><aside className="product-context"><div className="product-context-heading"><Icon name="shield" size={18}/><strong>Follow the evidence.</strong></div><p>An investigation begins with a question.</p><div className="product-question">Who’s behind the early buying?</div><div className="product-context-steps"><span><Icon name="check" size={15}/>Explore the launch</span><span><Icon name="check" size={15}/>Trace funding links</span><span><Icon name="check" size={15}/>Inspect the finding</span></div><Link href="/dashboard">Try it in the dashboard<Icon name="arrow" size={15}/></Link><small>Synthetic events. Real detection rules.</small></aside><div className="hero-visual"><LaunchPreview/></div></div></InvestigationWindow>
       </section>
 
       <section id="questions" className="landing-faq" aria-labelledby="questions-heading"><div className="faq-intro"><p className="section-kicker">Before you explore</p><h2 id="questions-heading">A few things<br/>worth knowing.</h2></div><LandingFaq/></section>

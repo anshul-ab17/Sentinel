@@ -1,14 +1,15 @@
 "use client";
 
-import { useMemo, useState } from "react";
+import { useId, useMemo, useState } from "react";
 import type { Snapshot } from "@shared/snapshot";
 
 type LinkFilter = "all" | "funding" | "trades";
 type GraphNode = { address: string; role: "Buyer" | "Funding source" | "Buyer · source"; x: number; y: number };
 
-export function WalletGraph({ snapshot }: { snapshot: Snapshot }) {
+export function WalletGraph({ snapshot, compact = false, onOpen, initialFilter = "all" }: { snapshot: Snapshot; compact?: boolean; onOpen?: () => void; initialFilter?: LinkFilter }) {
+  const gridId = useId();
   const [poolId, setPoolId] = useState(snapshot.pools[0]?.address ?? "");
-  const [filter, setFilter] = useState<LinkFilter>("all");
+  const [filter, setFilter] = useState<LinkFilter>(initialFilter);
   const [layout, setLayout] = useState<"graph" | "addresses">("graph");
   const data = useMemo(() => {
     const events = snapshot.events.filter(event => event.pool === poolId);
@@ -30,18 +31,18 @@ export function WalletGraph({ snapshot }: { snapshot: Snapshot }) {
   const showTrades = filter !== "funding";
   const pool = snapshot.pools.find(item => item.address === poolId);
 
-  return <section className="panel wallet-graph-panel">
-    <div className="panel-heading wallet-graph-heading"><div><span className="eyebrow">WALLET INTELLIGENCE</span><h2>Wallet graph</h2><p>Direct funding links and observed buyers in this sample pool.</p></div><div className="wallet-graph-controls">
+  return <section className={`panel wallet-graph-panel ${compact ? "wallet-graph-compact" : ""}`}>
+    <div className="panel-heading wallet-graph-heading"><div><span className="eyebrow">WALLET INTELLIGENCE</span><h2>{compact ? "Wallet funding network" : "Wallet graph"}</h2><p>Direct funding links and observed buyers in this sample pool.</p></div>{compact ? <button className="text-button" onClick={onOpen}>View investigation →</button> : <div className="wallet-graph-controls">
       <select value={poolId} aria-label="Choose pool for wallet graph" onChange={event => setPoolId(event.target.value)}>{snapshot.pools.map(item => <option key={item.address} value={item.address}>{item.symbol} · {item.name}</option>)}</select>
       <div className="metric-switch" role="group" aria-label="Wallet graph view"><button type="button" aria-pressed={layout === "graph"} onClick={() => setLayout("graph")}>Graph</button><button type="button" aria-pressed={layout === "addresses"} onClick={() => setLayout("addresses")}>Addresses</button></div>
-    </div></div>
+    </div>}</div>
     {layout === "graph" ? <>
       <div className="wallet-graph-toolbar"><div className="metric-switch" role="group" aria-label="Filter wallet graph links"><button type="button" aria-pressed={filter === "all"} onClick={() => setFilter("all")}>All links</button><button type="button" aria-pressed={filter === "funding"} onClick={() => setFilter("funding")}>Funding</button><button type="button" aria-pressed={filter === "trades"} onClick={() => setFilter("trades")}>Purchases</button></div><span>{data.buyers.length} buyers <i/> {data.sources.length} funding sources</span></div>
       {data.buyers.length ? <div className="wallet-graph-canvas"><svg viewBox="0 0 820 440" role="img" aria-label={`${data.buyers.length} observed buyers and ${data.funding.length} direct funding links for ${pool?.symbol ?? "selected pool"}`}>
-        <defs><pattern id="wallet-graph-grid" width="25" height="25" patternUnits="userSpaceOnUse"><circle cx="1" cy="1" r=".8" fill="var(--graph-grid)"/></pattern></defs>
-        <rect width="820" height="440" fill="url(#wallet-graph-grid)"/>
+        <defs><pattern id={gridId} width="25" height="25" patternUnits="userSpaceOnUse"><circle cx="1" cy="1" r=".8" fill="var(--graph-grid)"/></pattern></defs>
+        <rect width="820" height="440" fill={`url(#${gridId})`}/>
         {showFunding && data.funding.map((event, index) => { const source = data.positions.get(event.source); const buyer = data.positions.get(event.wallet); return source && buyer ? <path key={`funding-${event.id}-${index}`} className="wallet-edge funding" d={`M${source.x + 32} ${source.y} C${source.x + 110} ${source.y},${buyer.x - 100} ${buyer.y},${buyer.x - 35} ${buyer.y}`}><title>Observed direct funding transfer</title></path> : null; })}
-        {showTrades && data.buyers.map(address => { const buyer = data.positions.get(address); return buyer ? <path key={`trade-${address}`} className="wallet-edge trade" d={`M${buyer.x + 32} ${buyer.y} Q${(buyer.x + 755) / 2} ${buyer.y},755 210`}><title>Observed purchase in {pool?.symbol}</title></path> : null; })}
+        {showTrades && data.buyers.map(address => { const buyer = data.positions.get(address); return buyer ? <path key={`trade-${address}`} className="wallet-edge trade" d={`M${buyer.x + 32} ${buyer.y} Q${(buyer.x + 755) / 2} ${buyer.y},755 210`}><title>{`Observed purchase in ${pool?.symbol}`}</title></path> : null; })}
         {data.sources.filter(address => !data.positions.get(address)?.role.startsWith("Buyer")).map(address => { const node = data.positions.get(address)!; return <g className="wallet-node source" key={address} transform={`translate(${node.x} ${node.y})`}><circle r="23"/><text className="wallet-node-mark" textAnchor="middle" y="5">F</text><text className="wallet-node-label" x="31" y="4">Funding source</text><text className="wallet-node-address" x="31" y="19">{address.slice(0, 5)}…{address.slice(-4)}</text></g>; })}
         {data.buyers.map(address => { const node = data.positions.get(address)!; return <g className="wallet-node buyer" key={address} transform={`translate(${node.x} ${node.y})`}><circle r="22"/><text className="wallet-node-mark" textAnchor="middle" y="5">W</text><text className="wallet-node-address" textAnchor="middle" y="39">{address.slice(0, 5)}…{address.slice(-4)}</text></g>; })}
         <g className="wallet-node pool-node" transform="translate(755 210)"><circle r="31"/><text className="wallet-node-mark" textAnchor="middle" y="5">{pool?.symbol.slice(0, 1) ?? "P"}</text><text className="wallet-node-label" textAnchor="middle" y="52">{pool?.symbol ?? "Pool"}</text><text className="wallet-node-address" textAnchor="middle" y="67">DBC pool</text></g>
