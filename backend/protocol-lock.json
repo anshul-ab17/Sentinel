@@ -1,0 +1,34 @@
+{
+  "cluster": "configured at deployment",
+  "dbc_program_id": "dbcij3LWUppWqq96dh6gJWwBifmcGfLSB5D4DuSMaqN",
+  "program_revision": "f552f20aa3c1c7631427c3827aeea7c58b902813",
+  "sdk_revision": "a28b7239e71899eb52ff7aacac4dec90441885c4",
+  "sdk_version": "1.5.13",
+  "idl_sha256": "beedc8c869bc04865c26349a72a3ba9c773e61f48be2d33093c591a015fe82fd",
+  "program_hash": null,
+  "decoder_version": "anchor-dbc-0.2.1-f552f20",
+  "supported_events": [
+    "EvtInitializePool",
+    "EvtSwap2",
+    "EvtCurveComplete",
+    "EvtClaimTradingFee",
+    "EvtClaimCreatorTradingFee",
+    "EvtUpdatePoolCreator"
+  ],
+  "unsupported": [
+    "DAMM v1",
+    "DAMM v2 positions",
+    "Token-2022 transfer hooks",
+    "exact-in/out/partial quotes",
+    "transaction version 1"
+  ],
+  "transport": "HTTP finalized block reconciliation",
+  "anchor_version": "1.0.2",
+  "supported_transaction_versions": [
+    "legacy",
+    0
+  ],
+  "observed_unknown_event_discriminators": [
+    "bb77f80dafff403f (devnet recorded swap; raw quarantined)"
+  ]
+}

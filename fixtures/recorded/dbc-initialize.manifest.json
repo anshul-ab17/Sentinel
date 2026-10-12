@@ -1,0 +1,14 @@
+{
+  "synthetic": false,
+  "signature": "gWcgaiAzE1ZHw9fFXjD2BhfStauREZSi6CxuCThDSmqtuNrdMDQywGeFCT4Tuv4jxLp6Fes6mjZsPoEMwXFdQqf",
+  "slot": "510342920",
+  "genesis_hash": "EtWTRABZaYq6iMfeYKouRu166VU2xqa1wcaWoxPkrZBG",
+  "commitment": "finalized",
+  "variants": [
+    "EvtInitializePool"
+  ],
+  "captured_at": "2026-10-12T17:44:56.101Z",
+  "raw_sha256": "a006b50c6930074ee61a9c7ca5b9e9e4aaedf3e98d977c07662221a45363cbc0",
+  "source": "Public Solana HTTP RPC; credential-free recorded response",
+  "decoder_revision": "f552f20aa3c1c7631427c3827aeea7c58b902813"
+}
