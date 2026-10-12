@@ -1,0 +1,23 @@
+DO $$ BEGIN
+  IF NOT EXISTS (SELECT 1 FROM pg_roles WHERE rolname='sentinel_api') THEN CREATE ROLE sentinel_api NOLOGIN; END IF;
+  IF NOT EXISTS (SELECT 1 FROM pg_roles WHERE rolname='sentinel_engine') THEN CREATE ROLE sentinel_engine NOLOGIN; END IF;
+  IF NOT EXISTS (SELECT 1 FROM pg_roles WHERE rolname='sentinel_worker') THEN CREATE ROLE sentinel_worker NOLOGIN; END IF;
+END $$;
+GRANT USAGE ON SCHEMA public TO sentinel_api,sentinel_engine,sentinel_worker;
+GRANT SELECT ON pools,canonical_events,chain_observations,account_snapshots,signals,signal_revisions,coverage_intervals,provider_checkpoints,fixture_snapshots TO sentinel_api,sentinel_engine,sentinel_worker;
+GRANT INSERT,UPDATE ON pools,canonical_events,chain_observations,account_snapshots,signals,signal_revisions,coverage_intervals,provider_checkpoints TO sentinel_engine;
+GRANT SELECT,INSERT,UPDATE,DELETE ON users,wallets,auth_challenges,sessions,watchlists,investigations,notification_preferences TO sentinel_api;
+GRANT SELECT,INSERT,UPDATE ON processing_jobs TO sentinel_api,sentinel_engine,sentinel_worker;
+ALTER TABLE processing_jobs ENABLE ROW LEVEL SECURITY;
+CREATE POLICY api_assessment_jobs ON processing_jobs TO sentinel_api USING (kind='assessment') WITH CHECK (kind='assessment');
+CREATE POLICY worker_assessment_jobs ON processing_jobs TO sentinel_worker USING (kind='assessment') WITH CHECK (kind='assessment');
+CREATE POLICY engine_analysis_jobs ON processing_jobs TO sentinel_engine USING (kind='analysis') WITH CHECK (kind='analysis');
+GRANT SELECT ON outbox_events TO sentinel_api,sentinel_engine,sentinel_worker;
+GRANT INSERT ON outbox_events TO sentinel_engine,sentinel_worker;
+ALTER TABLE outbox_events ENABLE ROW LEVEL SECURITY;
+CREATE POLICY api_outbox_read ON outbox_events FOR SELECT TO sentinel_api USING (true);
+CREATE POLICY worker_outbox ON outbox_events TO sentinel_worker USING (topic='assessment') WITH CHECK (topic='assessment' AND user_id IS NOT NULL);
+CREATE POLICY engine_outbox ON outbox_events TO sentinel_engine USING (user_id IS NULL) WITH CHECK (user_id IS NULL);
+GRANT SELECT,INSERT ON ai_assessments TO sentinel_worker;
+GRANT SELECT ON ai_assessments TO sentinel_api;
+GRANT USAGE,SELECT ON ALL SEQUENCES IN SCHEMA public TO sentinel_engine,sentinel_worker;
