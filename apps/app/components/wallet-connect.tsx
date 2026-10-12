@@ -13,7 +13,7 @@ declare global {
   }
 }
 
-export function WalletConnect() {
+export function WalletConnect({ label = "Connect" }: { label?: string }) {
   const [address, setAddress] = useState<string | null>(null);
   const [message, setMessage] = useState("");
   const [connecting, setConnecting] = useState(false);
@@ -39,8 +39,8 @@ export function WalletConnect() {
 
   return <div className="wallet-connect-wrap">
     <button type="button" className="wallet-connect" onClick={connect} disabled={connecting}>
-      <svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.7" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true"><rect x="3" y="6" width="18" height="14" rx="3"/><path d="M3 9V6a2 2 0 0 1 2-2h14M16 13h5"/><circle cx="16" cy="13" r=".7" fill="currentColor"/></svg>
-      <span>{connecting ? "Connecting" : address ? `${address.slice(0, 4)}…${address.slice(-4)}` : "Connect"}</span>
+      <svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.7" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true"><path d="M10 13a5 5 0 0 0 7 .1l3-3a5 5 0 0 0-7.1-7.1l-1.7 1.7 M14 11a5 5 0 0 0-7-.1l-3 3a5 5 0 0 0 7.1 7.1l1.7-1.7 M8 16l8-8"/></svg>
+      <span>{connecting ? "Connecting" : address ? `${address.slice(0, 4)}…${address.slice(-4)}` : label}</span>
     </button>
     {message && <div className="wallet-connect-message" role="status">{message}{!walletAvailable && <> <a href="https://phantom.app/download" target="_blank" rel="noreferrer">Get Phantom</a></>}</div>}
   </div>;

@@ -21,7 +21,7 @@ export function LaunchPreview() {
       <svg viewBox="0 0 460 330" role="img" aria-label={stage === 0 ? "Seven observed buyers around the Orbit pool." : "A common funding source connects to three of seven Orbit buyers. Shared funding does not establish ownership."}>
         <g className="graph-guides" fill="none"><ellipse cx="230" cy="188" rx="205" ry="109"/><ellipse cx="230" cy="188" rx="144" ry="73"/></g>
         <g className="graph-lines" fill="none">{wallets.map((wallet, index) => <path key={index} d={`M230 210 L${wallet.x} ${wallet.y}`} />)}</g>
-        {stage > 0 && <g className="graph-funding" fill="none"><path d="M230 58C230 102 100 92 100 155M230 58V155M230 58C230 102 360 92 360 155"/></g>}
+        {stage > 0 && <g className="graph-funding" fill="none"><path pathLength="1" d="M230 58C230 102 100 92 100 155M230 58V155M230 58C230 102 360 92 360 155"/></g>}
         {wallets.map((wallet, index) => <g key={index} className={stage > 0 && index < 3 ? "graph-wallet linked" : "graph-wallet"}>
           <rect x={wallet.x - 20} y={wallet.y - 17} width="40" height="34" rx="10"/><path d={`M${wallet.x - 8} ${wallet.y - 5}h16v11h-16z M${wallet.x + 3} ${wallet.y}h5`} fill="none"/>
           <text x={wallet.x} y={wallet.y + 34} textAnchor="middle">Buyer {index + 1}</text>

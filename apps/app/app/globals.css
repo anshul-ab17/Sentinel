@@ -61,10 +61,11 @@ nav b { margin-left: auto; font-size: 11px; font-weight: 500; }
 .topbar-actions { display: flex; align-items: center; gap: 16px; }
 .demo-pill { display: flex; align-items: center; gap: 7px; color: var(--muted); font-size: 11px; white-space: nowrap; }
 .theme-toggle { display: inline-flex; align-items: center; justify-content: center; gap: 8px; width: 40px; height: 40px; padding: 0; background: var(--surface); border: 1px solid var(--line); border-radius: 999px; color: var(--text); transition: color .18s, background .18s, border-color .18s, transform .18s; }
-.theme-toggle:hover { background: var(--accent-soft); border-color: var(--accent); color: var(--accent); transform: rotate(-8deg); }
+.theme-toggle { border-radius: 4px; }
+.theme-toggle:hover { background: var(--accent-soft); border-color: var(--accent); color: var(--accent); }
 .theme-sun { display: none; }
-:root[data-theme="dark"] .theme-sun { display: inline; }
-:root[data-theme="dark"] .theme-moon { display: none; }
+:root[data-theme="light"] .theme-sun { display: inline; }
+:root[data-theme="light"] .theme-moon { display: none; }
 main { padding: 36px 36px 0; max-width: 1500px; margin: auto; }
 .page-heading { display: flex; justify-content: space-between; gap: 24px; align-items: center; margin-bottom: 26px; }
 .page-heading .eyebrow { display: block; margin-bottom: 12px; }
@@ -169,8 +170,14 @@ summary { cursor: pointer; color: var(--text); }
 .timeline li > div { min-width: 0; }
 footer { display: flex; justify-content: space-between; gap: 20px; font-size: 10px; color: var(--muted); border-top: 1px solid var(--line); padding: 24px 0; margin-top: 12px; }
 .footer-dot { padding: 0 8px; }
-.offline { padding: 80px 30px; }
-.offline a { color: var(--accent); }
+.workspace-reconnect { min-height: 100svh; display: grid; place-items: center; padding: 24px; }
+.workspace-reconnect-card { width: 100%; max-width: 480px; padding: clamp(24px, 5vw, 44px); border: 1px solid var(--line); border-radius: 12px; background: var(--panel); }
+.workspace-reconnect-brand { display: inline-flex; align-items: center; gap: 10px; margin-bottom: 40px; font-size: 20px; font-weight: 600; }
+.workspace-reconnect h1 { font-size: 30px; font-weight: 500; }
+.workspace-reconnect p { color: var(--muted); line-height: 1.8; margin: 16px 0 28px; }
+.workspace-reconnect-actions { display: flex; align-items: center; flex-wrap: wrap; gap: 20px; }
+.workspace-reconnect-actions a { color: var(--accent); font-size: 13px; padding-block: 12px; }
+.workspace-reconnect-status { display: block; margin-top: 24px; color: var(--muted); font-size: 12px; }
 @media (max-width: 1200px) {
   main { padding: 28px 24px 0; } .topbar { padding: 0 24px; }
   .stats article { padding: 18px; } .stats article > strong { font-size: 25px; }

@@ -1,6 +1,7 @@
-type IconName = "shield" | "grid" | "launch" | "signal" | "replay" | "arrow" | "code" | "check" | "gift" | "graph";
+type IconName = "shield" | "grid" | "launch" | "signal" | "replay" | "arrow" | "code" | "check" | "gift" | "graph" | "search";
 
 const paths: Record<IconName, string> = {
+  search: "M21 21l-5-5 M18 10.5a7.5 7.5 0 1 1-15 0 7.5 7.5 0 0 1 15 0Z",
   shield: "M12 3 4 6v6c0 5 8 9 8 9s8-4 8-9V6l-8-3Z M8 12l3 3 5-6",
   grid: "M3 3h7v7H3z M14 3h7v7h-7z M3 14h7v7H3z M14 14h7v7h-7z",
   launch: "M5 19 19 5 M5 5h14v14",

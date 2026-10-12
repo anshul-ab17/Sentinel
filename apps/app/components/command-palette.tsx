@@ -88,7 +88,7 @@ export function CommandPalette({
 
   return <>
     <button ref={trigger} type="button" className="search palette-trigger" onClick={() => setOpen(true)} aria-haspopup="dialog" aria-expanded={open}>
-      <span aria-hidden="true">⌕</span><span className="palette-trigger-label">Search launches and commands...</span><kbd><span>⌘</span><span>K</span></kbd>
+      <Icon name="search" size={16}/><span className="palette-trigger-label">Search launches and commands...</span><kbd><span>⌘</span><span>K</span></kbd>
     </button>
     {open && <div className="command-backdrop" onMouseDown={event => { if (event.target === event.currentTarget) setOpen(false); }}>
       <section className="command-palette" role="dialog" aria-modal="true" aria-labelledby="command-heading" onKeyDown={navigateResults}>
