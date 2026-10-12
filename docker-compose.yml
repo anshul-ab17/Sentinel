@@ -6,7 +6,7 @@ services:
       POSTGRES_USER: sentinel
       POSTGRES_PASSWORD: sentinel
     ports:
-      - "127.0.0.1:5432:5432"
+      - "127.0.0.1:${DATABASE_PORT:-5432}:5432"
     volumes:
       - sentinel_db:/var/lib/postgresql/data
     healthcheck:
@@ -14,5 +14,89 @@ services:
       interval: 5s
       timeout: 5s
       retries: 10
+  migrate:
+    image: sentinel-backend-node:0.1.0
+    environment:
+      DATABASE_URL: postgresql://sentinel:sentinel@postgres:5432/sentinel
+    command: ["node", "scripts/migrate.mjs"]
+    depends_on:
+      postgres:
+        condition: service_healthy
+  api:
+    image: sentinel-backend-node:0.1.0
+    build:
+      context: .
+      dockerfile: backend/Dockerfile.node
+    env_file:
+      - path: .env
+        required: false
+    environment:
+      DATABASE_URL: postgresql://sentinel:sentinel@postgres:5432/sentinel
+      HOST: 0.0.0.0
+      PORT: 4000
+      APP_MODE: ${APP_MODE:-live}
+    ports:
+      - "127.0.0.1:${API_PORT:-4000}:4000"
+    depends_on:
+      migrate:
+        condition: service_completed_successfully
+    init: true
+    restart: unless-stopped
+    mem_limit: 512m
+    healthcheck:
+      test: ["CMD", "node", "-e", "fetch('http://127.0.0.1:4000/health/ready').then(r=>process.exit(r.ok?0:1)).catch(()=>process.exit(1))"]
+      interval: 10s
+      timeout: 5s
+      retries: 10
+  worker:
+    image: sentinel-backend-node:0.1.0
+    env_file:
+      - path: .env
+        required: false
+    environment:
+      DATABASE_URL: postgresql://sentinel:sentinel@postgres:5432/sentinel
+      APP_MODE: ${APP_MODE:-live}
+    command: ["node", "--import", "./scripts/register-aliases.mjs", "--experimental-strip-types", "apps/worker/src/service.ts"]
+    depends_on:
+      migrate:
+        condition: service_completed_successfully
+    init: true
+    restart: unless-stopped
+    mem_limit: 256m
+  engine:
+    image: sentinel-backend-engine:0.1.0
+    build:
+      context: .
+      dockerfile: services/engine/Dockerfile
+    env_file:
+      - path: .env
+        required: false
+    environment:
+      DATABASE_URL: postgresql://sentinel:sentinel@postgres:5432/sentinel
+      APP_MODE: ${APP_MODE:-live}
+    depends_on:
+      migrate:
+        condition: service_completed_successfully
+    init: true
+    restart: unless-stopped
+    mem_limit: 1g
+    healthcheck:
+      test: ["CMD", "sentinel-engine", "--health"]
+      interval: 10s
+      timeout: 5s
+      retries: 10
+  web:
+    profiles: ["web"]
+    image: sentinel-backend-node:0.1.0
+    environment:
+      API_SERVER_URL: http://api:4000
+    command: ["node", "apps/app/node_modules/next/dist/bin/next", "dev", "apps/app", "--hostname", "0.0.0.0"]
+    ports:
+      - "127.0.0.1:${WEB_PORT:-3000}:3000"
+    depends_on:
+      api:
+        condition: service_started
+    init: true
+    mem_limit: 1g
 volumes:
   sentinel_db:

@@ -1,0 +1,17 @@
+FROM node:24-bookworm-slim
+RUN npm install -g pnpm@11.9.0
+WORKDIR /workspace
+COPY package.json pnpm-lock.yaml pnpm-workspace.yaml tsconfig.json ./
+COPY apps/app/package.json ./apps/app/package.json
+COPY apps/server/package.json ./apps/server/package.json
+COPY apps/worker/package.json ./apps/worker/package.json
+COPY packages/database/package.json ./packages/database/package.json
+RUN pnpm install --frozen-lockfile
+COPY --chown=node:node apps ./apps
+COPY --chown=node:node packages ./packages
+COPY scripts ./scripts
+COPY migrations ./migrations
+COPY tests/fixtures ./tests/fixtures
+USER node
+EXPOSE 4000
+CMD ["node", "--import", "./scripts/register-aliases.mjs", "--experimental-strip-types", "apps/server/src/index.ts"]

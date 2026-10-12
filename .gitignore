@@ -9,4 +9,6 @@ coverage/
 !.env.example
 *.tsbuildinfo
 packages/database/generated/
+target/
+.tmp-*
 .DS_Store
