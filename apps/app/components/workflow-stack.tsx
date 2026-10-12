@@ -18,8 +18,12 @@ export function WorkflowStack({ children }: { children: ReactNode }) {
       frame = 0;
       if (section.dataset.animated !== "true") return;
       const top = parseFloat(getComputedStyle(section.firstElementChild!).top);
-      const distance = section.offsetHeight - section.firstElementChild!.getBoundingClientRect().height;
-      const progress = Math.max(0, Math.min(1, (top - section.getBoundingClientRect().top) / distance));
+      const distance =
+        section.offsetHeight - section.firstElementChild!.getBoundingClientRect().height;
+      const progress = Math.max(
+        0,
+        Math.min(1, (top - section.getBoundingClientRect().top) / distance),
+      );
       const stride = (stage.clientWidth + 20) / 3;
       cards.forEach((card, index) => {
         const phase = Math.max(0, Math.min(1, progress * 3.4 - index));
@@ -31,10 +35,15 @@ export function WorkflowStack({ children }: { children: ReactNode }) {
         card.style.setProperty("--card-progress", String(ease));
       });
     };
-    const schedule = () => { if (!frame) frame = requestAnimationFrame(draw); };
+    const schedule = () => {
+      if (!frame) frame = requestAnimationFrame(draw);
+    };
     const sync = () => {
       section.dataset.animated = String(viewport.matches && !preference.matches);
-      cards.forEach(card => { card.style.removeProperty("transform"); card.style.removeProperty("--card-progress"); });
+      cards.forEach((card) => {
+        card.style.removeProperty("transform");
+        card.style.removeProperty("--card-progress");
+      });
       schedule();
     };
     const observer = new ResizeObserver(schedule);
@@ -54,7 +63,20 @@ export function WorkflowStack({ children }: { children: ReactNode }) {
     };
   }, []);
 
-  return <section ref={root} id="workflow" className="landing-workflow" aria-labelledby="workflow-heading">
-    <div className="workflow-pin">{children}<div className="workflow-caption" aria-hidden="true"><span>THE INVESTIGATION FILES / 01—03</span><span>Scroll to unfold ↓</span></div></div>
-  </section>;
+  return (
+    <section
+      ref={root}
+      id="workflow"
+      className="landing-workflow"
+      aria-labelledby="workflow-heading"
+    >
+      <div className="workflow-pin">
+        {children}
+        <div className="workflow-caption" aria-hidden="true">
+          <span>THE INVESTIGATION FILES / 01—03</span>
+          <span>Scroll to unfold ↓</span>
+        </div>
+      </div>
+    </section>
+  );
 }
