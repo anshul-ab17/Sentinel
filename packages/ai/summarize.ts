@@ -6,7 +6,8 @@ export function summarize(alert: Alert) {
     method: "deterministic-template" as const,
     observation: alert.observation,
     interpretation: alert.interpretation,
-    limitations: "Coverage is limited to supplied finalized events. Missing funding history can change findings. Synthetic demo data is not on-chain evidence.",
+    limitations:
+      "Coverage is limited to supplied finalized events. Missing funding history can change findings. See the source coverage before interpreting this result.",
     rule: alert.rule,
     evidence: alert.evidence,
   };
