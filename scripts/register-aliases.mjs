@@ -4,7 +4,9 @@ import { fileURLToPath } from "node:url";
 
 // Reuse the exact tsconfig paths for native Node TypeScript execution (Node 24+).
 const root = new URL("../", import.meta.url);
-const { compilerOptions: { paths } } = JSON.parse(readFileSync(new URL("tsconfig.json", root), "utf8"));
+const {
+  compilerOptions: { paths },
+} = JSON.parse(readFileSync(new URL("tsconfig.json", root), "utf8"));
 registerHooks({
   resolve(specifier, context, nextResolve) {
     for (const [alias, [target]] of Object.entries(paths)) {

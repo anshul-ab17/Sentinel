@@ -2,8 +2,13 @@
   "name": "sentinel",
   "private": true,
   "type": "module",
-  "workspaces": ["apps/*", "packages/*"],
-  "engines": { "node": ">=24" },
+  "workspaces": [
+    "apps/*",
+    "packages/*"
+  ],
+  "engines": {
+    "node": ">=24"
+  },
   "version": "0.1.0",
   "packageManager": "pnpm@11.9.0",
   "scripts": {
@@ -16,12 +21,36 @@
     "test": "node --import ./scripts/register-aliases.mjs --experimental-strip-types --test tests/*.test.ts",
     "db:validate": "pnpm --filter @sentinel/database validate",
     "db:generate": "pnpm --filter @sentinel/database generate",
-    "db:push": "pnpm --filter @sentinel/database db:push"
+    "db:migrate": "node --env-file-if-exists=.env scripts/migrate.mjs",
+    "engine:dev": "cargo run -p sentinel-engine",
+    "engine:test": "cargo test --workspace",
+    "contracts:generate": "node scripts/generate-contracts.mjs",
+    "contracts:check": "node scripts/generate-contracts.mjs --check",
+    "source:check": "node scripts/check-source-encoding.mjs",
+    "api:generate": "node --env-file-if-exists=.env --import ./scripts/register-aliases.mjs --experimental-strip-types scripts/generate-api.mjs",
+    "worker:start": "node --env-file-if-exists=.env --import ./scripts/register-aliases.mjs --experimental-strip-types apps/worker/src/service.ts",
+    "test:integration": "node --env-file-if-exists=.env --import ./scripts/register-aliases.mjs --experimental-strip-types --test tests/integration/*.test.ts",
+    "prepare": "husky",
+    "format": "prettier --write \"**/*.{js,mjs,ts,tsx}\" && cargo fmt --all",
+    "format:check": "prettier --check \"**/*.{js,mjs,ts,tsx}\" && cargo fmt --all -- --check",
+    "lint": "eslint .",
+    "lint:rust": "cargo clippy --workspace --all-targets --locked -- -D warnings",
+    "check": "pnpm source:check && pnpm contracts:check && pnpm format:check && pnpm lint && pnpm lint:rust && pnpm typecheck && pnpm test && pnpm engine:test"
   },
   "devDependencies": {
+    "@eslint/js": "10.0.1",
     "@types/node": "^22.20.0",
+    "@types/pg": "^8.23.1",
     "@types/react": "^19.0.0",
     "@types/react-dom": "^19.0.0",
-    "typescript": "^5.9.0"
+    "ajv": "^8.20.0",
+    "bs58": "^6.0.0",
+    "eslint": "10.12.0",
+    "husky": "9.1.7",
+    "lint-staged": "^16.4.0",
+    "pg": "^8.23.1",
+    "prettier": "3.9.10",
+    "typescript": "^5.9.0",
+    "typescript-eslint": "8.71.2"
   }
 }

@@ -1,0 +1,36 @@
+name: Backend checks
+on: [push, pull_request]
+jobs:
+  backend:
+    runs-on: ubuntu-latest
+    services:
+      postgres:
+        image: postgres:17-alpine
+        env:
+          POSTGRES_DB: sentinel
+          POSTGRES_USER: sentinel
+          POSTGRES_PASSWORD: sentinel
+        ports: ['5432:5432']
+        options: --health-cmd 'pg_isready -U sentinel' --health-interval 5s --health-timeout 5s --health-retries 10
+    env:
+      APP_MODE: fixture
+      DATABASE_URL: postgresql://sentinel:sentinel@localhost:5432/sentinel
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 24
+      - run: npm install -g pnpm@11.9.0
+      - run: pnpm install --frozen-lockfile
+      - run: pnpm db:migrate
+      - run: node scripts/generate-contracts.mjs --check
+      - run: pnpm source:check
+      - run: pnpm api:generate && git diff --exit-code -- packages/api-client
+      - run: pnpm typecheck && pnpm test && pnpm test:integration
+      - uses: dtolnay/rust-toolchain@stable
+        with:
+          toolchain: 1.98.1
+          components: rustfmt, clippy
+      - run: pnpm format:check && pnpm lint && pnpm lint:rust
+      - run: cargo test --workspace --locked
+      - run: pnpm build

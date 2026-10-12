@@ -1,0 +1,17 @@
+node_modules/
+**/node_modules/
+.next/
+**/.next/
+target/
+coverage/
+dist/
+**/dist/
+.tmp*
+packages/database/generated/
+packages/contracts/event.ts
+packages/api-client/routes.ts
+packages/api-client/openapi.json
+apps/app/next-env.d.ts
+services/engine/src/domain.rs
+backend/protocol/dbc-idl.json
+fixtures/recorded/

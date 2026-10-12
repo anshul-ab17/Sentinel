@@ -1,0 +1,5 @@
+pnpm exec lint-staged
+pnpm source:check
+pnpm contracts:check
+pnpm typecheck
+pnpm test

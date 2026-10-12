@@ -1,0 +1,70 @@
+import js from "@eslint/js";
+import tseslint from "typescript-eslint";
+
+export default tseslint.config(
+  {
+    ignores: [
+      "**/node_modules/**",
+      "**/.next/**",
+      "target/**",
+      "**/dist/**",
+      "coverage/**",
+      ".tmp*",
+      "packages/database/generated/**",
+      "packages/contracts/event.ts",
+      "packages/api-client/routes.ts",
+      "apps/app/next-env.d.ts",
+    ],
+  },
+  js.configs.recommended,
+  ...tseslint.configs.recommended,
+  {
+    languageOptions: {
+      globals: Object.fromEntries(
+        [
+          "process",
+          "console",
+          "Buffer",
+          "URL",
+          "URLSearchParams",
+          "Request",
+          "Response",
+          "Headers",
+          "fetch",
+          "setTimeout",
+          "clearTimeout",
+          "setInterval",
+          "clearInterval",
+          "AbortController",
+          "AbortSignal",
+          "TextDecoder",
+          "TextEncoder",
+          "structuredClone",
+          "performance",
+          "window",
+          "document",
+          "navigator",
+          "localStorage",
+          "sessionStorage",
+          "EventSource",
+          "HTMLElement",
+          "HTMLInputElement",
+          "IntersectionObserver",
+          "ResizeObserver",
+          "requestAnimationFrame",
+          "cancelAnimationFrame",
+          "CustomEvent",
+          "Event",
+          "Node",
+        ].map((name) => [name, "readonly"]),
+      ),
+    },
+    rules: {
+      "@typescript-eslint/no-explicit-any": "off",
+      "@typescript-eslint/no-unused-vars": [
+        "error",
+        { argsIgnorePattern: "^_", caughtErrorsIgnorePattern: "^_" },
+      ],
+    },
+  },
+);
