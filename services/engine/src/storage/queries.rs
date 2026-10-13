@@ -33,6 +33,15 @@ INSERT INTO chain_observations(id,
 ON CONFLICT DO NOTHING
 "#;
 
+pub(super) const UPSERT_WALLET_TRANSFER: &str = r#"
+INSERT INTO wallet_transfers(
+    event_id,cluster,signature,slot,transaction_index,instruction_path,
+    source_wallet,recipient_wallet,lamports,block_time,observation_id
+) VALUES($1,$2,$3,$4::numeric,$5,$6,$7,$8,$9::numeric,$10,$11)
+ON CONFLICT(event_id) DO UPDATE
+SET active=true,observation_id=excluded.observation_id,block_time=excluded.block_time
+"#;
+
 pub(super) const RECORD_UNSUPPORTED_COVERAGE: &str = r#"
 INSERT INTO coverage_intervals(cluster,
     start_slot,

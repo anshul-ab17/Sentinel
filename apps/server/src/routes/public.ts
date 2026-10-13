@@ -109,6 +109,20 @@ export function registerPublicRoutes(
       ).rows[0] ??
       (
         await db.query(
+          `SELECT jsonb_build_object(
+                    'event_id',t.event_id,'kind','native_sol_transfer',
+                    'source',t.source_wallet,'recipient',t.recipient_wallet,
+                    'lamports',t.lamports::text,'slot',t.slot::text,
+                    'signature',t.signature,'instruction_path',t.instruction_path,
+                    'block_time',t.block_time) AS payload,
+                  o.raw,o.provider,o.block_hash,o.received_at
+             FROM wallet_transfers t JOIN chain_observations o ON o.id=t.observation_id
+            WHERE t.cluster=$1 AND t.event_id=$2 AND t.active`,
+          [cluster, request.params.id],
+        )
+      ).rows[0] ??
+      (
+        await db.query(
           "SELECT id,raw,provider,block_hash,received_at,status FROM chain_observations WHERE cluster=$1 AND id=$2",
           [cluster, request.params.id],
         )
@@ -226,28 +240,74 @@ export function registerPublicRoutes(
           type: "object",
           additionalProperties: false,
           properties: {
-            hops: { type: "integer", minimum: 1, maximum: 1, default: 1 },
+            hops: { type: "integer", minimum: 1, maximum: 3, default: 1 },
             limit: { type: "integer", minimum: 1, maximum: 100, default: 25 },
           },
         },
       },
     },
     async (request) => {
+      const hops = request.query.hops ?? 1;
+      const limit = request.query.limit ?? 25;
       const rows = (
         await db.query(
-          "SELECT event_id,payload FROM canonical_events WHERE cluster=$1 AND active AND kind IN ('funding','transfer') AND (payload->>'wallet'=$2 OR payload->>'source'=$2 OR payload->>'recipient'=$2) ORDER BY slot DESC LIMIT $3",
-          [cluster, request.params.address, request.query.limit ?? 25],
+          `WITH RECURSIVE adjacency AS (
+             SELECT t.event_id,t.cluster,t.source_wallet,t.recipient_wallet,t.lamports::text,
+                    t.signature,t.slot::text,t.block_time,t.source_wallet AS wallet,
+                    t.recipient_wallet AS next_wallet,
+                    row_number() OVER (PARTITION BY t.cluster,t.source_wallet ORDER BY t.slot DESC,t.event_id) AS degree_rank
+               FROM wallet_transfers t WHERE t.active
+             UNION ALL
+             SELECT t.event_id,t.cluster,t.source_wallet,t.recipient_wallet,t.lamports::text,
+                    t.signature,t.slot::text,t.block_time,t.recipient_wallet AS wallet,
+                    t.source_wallet AS next_wallet,
+                    row_number() OVER (PARTITION BY t.cluster,t.recipient_wallet ORDER BY t.slot DESC,t.event_id) AS degree_rank
+               FROM wallet_transfers t WHERE t.active
+           ), walk AS (
+             SELECT t.event_id,t.source_wallet,t.recipient_wallet,t.lamports,
+                    t.signature,t.slot,t.block_time,t.next_wallet,
+                    ARRAY[$2::text,t.next_wallet] AS path_wallets,
+                    ARRAY[t.event_id] AS path_events,1 AS hop
+               FROM adjacency t
+              WHERE t.cluster=$1 AND t.wallet=$2 AND t.degree_rank<=25
+             UNION ALL
+             SELECT t.event_id,t.source_wallet,t.recipient_wallet,t.lamports,
+                    t.signature,t.slot,t.block_time,t.next_wallet,
+                    w.path_wallets || t.next_wallet,w.path_events || t.event_id,w.hop+1
+               FROM walk w
+               JOIN adjacency t ON t.cluster=$1 AND t.wallet=w.next_wallet AND t.degree_rank<=25
+              WHERE w.hop<$3
+                AND NOT (t.event_id=ANY(w.path_events))
+                AND NOT (t.next_wallet=ANY(w.path_wallets))
+           )
+           SELECT event_id,source_wallet,recipient_wallet,lamports,signature,slot,
+                  block_time,path_wallets,hop
+             FROM walk ORDER BY hop,slot DESC,event_id LIMIT $4`,
+          [cluster, request.params.address, hops, limit],
         )
       ).rows;
       return envelope({
+        address: request.params.address,
         edges: rows.map((row) => ({
-          ...row.payload,
+          source: row.source_wallet,
+          recipient: row.recipient_wallet,
+          lamports: row.lamports,
+          signature: row.signature,
+          slot: row.slot,
+          timestamp: row.block_time,
+          hop: row.hop,
+          path: row.path_wallets,
           evidence_id: row.event_id,
-          relationship: "direct_transfer",
+          relationship: "observed_native_sol_transfer",
           ownership_claim: false,
         })),
-        hops: 1,
-        limitations: ["Only covered direct transfers; no automatic owner merging"],
+        hops,
+        maximum_supported_hops: 3,
+        limitations: [
+          "Only native SOL system transfers are indexed; SPL token transfers are not included",
+          "Graph paths show transfers, not wallet ownership or common control",
+          "Traversal is bounded to 25 newest transfer edges per wallet, requested hop count, and edge limit",
+        ],
       });
     },
   );

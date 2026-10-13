@@ -1,6 +1,8 @@
 use super::queries::*;
 use anyhow::{Context, Result, bail};
-use sentinel_engine::{DECODER, PROGRAM, account_keys, decode_transaction, digest};
+use sentinel_engine::{
+    DECODER, PROGRAM, account_keys, decode_system_transfers, decode_transaction, digest,
+};
 use serde_json::{Value, json};
 use sqlx::PgPool;
 
@@ -17,15 +19,20 @@ pub(crate) async fn persist_block(
     let mut tx = db.begin().await?;
     let mut affected = std::collections::BTreeSet::new();
     for (tx_index, raw) in transactions.iter().enumerate() {
-        if !account_keys(raw)
-            .iter()
-            .any(|key| key.as_str() == Some(PROGRAM))
-        {
+        let keys = account_keys(raw);
+        let has_dbc = keys.iter().any(|key| key.as_str() == Some(PROGRAM));
+        let transfers = decode_system_transfers(raw);
+        if !has_dbc && transfers.is_empty() {
             continue;
         }
         let signature = raw["transaction"]["signatures"][0]
             .as_str()
             .context("signature missing")?;
+        let (events, unsupported) = if has_dbc {
+            decode_transaction(raw)?
+        } else {
+            (vec![], vec![])
+        };
         let observation = digest(format!(
             "{cluster}:{signature}:{slot}:{block_hash}:finalized"
         ));
@@ -38,7 +45,6 @@ pub(crate) async fn persist_block(
             .bind(raw)
             .execute(&mut *tx)
             .await?;
-        let (events, unsupported) = decode_transaction(raw)?;
         if !unsupported.is_empty() {
             sqlx::query(RECORD_UNSUPPORTED_COVERAGE)
                 .bind(cluster)
@@ -46,6 +52,33 @@ pub(crate) async fn persist_block(
                 .bind(format!("{signature}: {}", unsupported.join("; ")))
                 .execute(&mut *tx)
                 .await?;
+        }
+        let block_time = block["blockTime"].as_i64();
+        for transfer in transfers {
+            let path = json!(transfer.path);
+            let event_id = digest(format!("{cluster}:{signature}:{path}:system-transfer-v1"));
+            sqlx::query(UPSERT_WALLET_TRANSFER)
+                .bind(&event_id)
+                .bind(cluster)
+                .bind(signature)
+                .bind(slot.to_string())
+                .bind(tx_index as i32)
+                .bind(&path)
+                .bind(&transfer.source)
+                .bind(&transfer.recipient)
+                .bind(&transfer.lamports)
+                .bind(block_time)
+                .bind(&observation)
+                .execute(&mut *tx)
+                .await?;
+            sqlx::query(
+                "INSERT INTO outbox_events(topic,entity_id,payload,dedup_key) VALUES('transfer',$1,$2,$3) ON CONFLICT DO NOTHING",
+            )
+            .bind(&event_id)
+            .bind(json!({"event_id":event_id,"slot":slot.to_string()}))
+            .bind(format!("transfer:{event_id}:{block_hash}"))
+            .execute(&mut *tx)
+            .await?;
         }
         for mut event in events {
             let ordinal = 0;

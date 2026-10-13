@@ -4,6 +4,9 @@ import swagger from "@fastify/swagger";
 import { registerPublicRoutes } from "./routes/public.ts";
 import { registerPrivateRoutes } from "./routes/private.ts";
 import { registerStreamRoutes } from "./routes/stream.ts";
+import { registerSharkRoutes } from "./routes/sharks.ts";
+import { registerAnomalyRoutes } from "./routes/anomalies.ts";
+import { registerPoolHistoryRoutes } from "./routes/pool-history.ts";
 import { loadConfig, type RuntimeConfig } from "../../../packages/config/runtime.ts";
 import { createDatabase, type Database } from "../../../packages/database/store.ts";
 import { registerAuth } from "./auth.ts";
@@ -130,6 +133,9 @@ export async function buildApi(
   });
   registerAuth(app, db, config);
   registerPublicRoutes(app, db, config, () => redis.ping());
+  registerSharkRoutes(app, db, config);
+  registerAnomalyRoutes(app, db, config);
+  registerPoolHistoryRoutes(app, db, config);
   registerPrivateRoutes(app, db, config);
   registerStreamRoutes(app, db, redis);
   app.all("/api/*", async (request, reply) => {
@@ -161,6 +167,8 @@ function isCacheableRead(url: string) {
     path === "/api/snapshot" ||
     path === "/api/pools" ||
     path === "/api/alerts" ||
+    path === "/v1/sharks/activity" ||
+    path === "/v1/sharks/wallets" ||
     /^\/api\/(?:pools|wallets)\/[^/]+(?:\/[^/]+)?$/.test(path) ||
     /^\/v1\/(?:launches|signals|pools|evidence\/[^/]+|pools\/[^/]+(?:\/events)?|tokens\/[^/]+\/(?:dossier|holders)|wallets\/[^/]+(?:\/graph)?)$/.test(
       path,

@@ -3,6 +3,14 @@ use sentinel_engine::digest;
 use serde_json::{Value, json};
 use sqlx::{PgPool, Row};
 
+#[path = "analysis/funding.rs"]
+mod funding;
+
+const FUNDING_LOOKBACK_SECONDS: u64 = 86_400;
+const LARGE_TRANSFER_LAMPORTS: u128 = 100_000_000_000;
+const SHARED_FUNDING_MIN_BUYERS: usize = 3;
+const SHARED_FUNDING_MIN_SHARE_BPS: u128 = 5_000;
+
 pub(crate) async fn drain_analysis(db: &PgPool) -> Result<()> {
     for _ in 0..100 {
         let job = sqlx::query(r#"
@@ -86,6 +94,8 @@ SELECT payload
         return Ok(());
     };
     let mut volumes = std::collections::BTreeMap::<String, u128>::new();
+    let mut first_buy = std::collections::BTreeMap::<String, u64>::new();
+    let mut buyer_evidence = std::collections::BTreeMap::<String, Vec<String>>::new();
     let mut evidence = vec![created["event_id"].clone()];
     let mut timestamp = start;
     for event in &events {
@@ -110,9 +120,29 @@ SELECT payload
             .parse::<u128>()?;
         let volume = volumes.entry(trader.to_string()).or_default();
         *volume = volume.checked_add(amount).context("volume overflow")?;
+        first_buy
+            .entry(trader.to_string())
+            .and_modify(|first| *first = (*first).min(time))
+            .or_insert(time);
+        buyer_evidence
+            .entry(trader.to_string())
+            .or_default()
+            .push(event["event_id"].as_str().unwrap_or_default().to_owned());
         evidence.push(event["event_id"].clone());
         timestamp = timestamp.max(time);
     }
+    funding::evaluate(funding::Evaluation {
+        db,
+        cluster,
+        pool,
+        start,
+        timestamp,
+        created_id: &created["event_id"],
+        volumes: &volumes,
+        first_buy: &first_buy,
+        buyer_evidence: &buyer_evidence,
+    })
+    .await?;
     if volumes.len() < 5 {
         return Ok(());
     }
@@ -152,46 +182,69 @@ SELECT payload
         "coverage":"partial",
         "commitment":"finalized"
     });
+    persist_signal(
+        db,
+        SignalRecord {
+            cluster,
+            pool,
+            id: &id,
+            rule_id: "early-buyer-concentration",
+            severity: "high",
+            status,
+            payload: &payload,
+        },
+    )
+    .await
+}
+
+#[cfg(test)]
+pub(crate) async fn analyze_pool_for_test(db: &PgPool, cluster: &str, pool: &str) -> Result<()> {
+    analyze(db, cluster, pool).await
+}
+
+pub(super) struct SignalRecord<'a> {
+    pub cluster: &'a str,
+    pub pool: &'a str,
+    pub id: &'a str,
+    pub rule_id: &'a str,
+    pub severity: &'a str,
+    pub status: &'a str,
+    pub payload: &'a Value,
+}
+
+pub(super) async fn persist_signal(db: &PgPool, signal: SignalRecord<'_>) -> Result<()> {
     let mut tx = db.begin().await?;
-    let changed = sqlx::query(r#"
-INSERT INTO signals(id,cluster,pool_address,rule_id,rule_version,severity,status,payload) SELECT $1,$2,$3,'early-buyer-concentration','0.1.0','high',$4,$5
-    WHERE $4='active' OR EXISTS(SELECT 1
-    FROM signals
-    WHERE id=$1)
-    ON CONFLICT(id)
-    DO UPDATE
-    SET status=excluded.status,payload=excluded.payload,updated_at=now()
-    WHERE signals.payload<>excluded.payload OR signals.status<>excluded.status
-    RETURNING id
-"#)
-        .bind(&id)
-            .bind(cluster)
-            .bind(pool)
-            .bind(status)
-            .bind(&payload)
-            .fetch_optional(&mut *tx)
-            .await?;
+    let changed = sqlx::query(
+        r#"
+INSERT INTO signals(id,cluster,pool_address,rule_id,rule_version,severity,status,payload)
+VALUES($1,$2,$3,$4,'0.1.0',$5,$6,$7)
+ON CONFLICT(id) DO UPDATE
+SET status=excluded.status,payload=excluded.payload,updated_at=now()
+WHERE signals.payload<>excluded.payload OR signals.status<>excluded.status
+RETURNING id
+"#,
+    )
+    .bind(signal.id)
+    .bind(signal.cluster)
+    .bind(signal.pool)
+    .bind(signal.rule_id)
+    .bind(signal.severity)
+    .bind(signal.status)
+    .bind(signal.payload)
+    .fetch_optional(&mut *tx)
+    .await?;
     if changed.is_some() {
+        sqlx::query("INSERT INTO signal_revisions(signal_id,payload) VALUES($1,$2)")
+            .bind(signal.id)
+            .bind(signal.payload)
+            .execute(&mut *tx)
+            .await?;
         sqlx::query(
-            r#"
-INSERT INTO signal_revisions(signal_id,payload)
-    VALUES($1,$2)
-"#,
+            "INSERT INTO outbox_events(topic,entity_id,payload,dedup_key) VALUES('signal',$1,$2,$3) ON CONFLICT DO NOTHING",
         )
-        .bind(&id)
-        .bind(&payload)
-        .execute(&mut *tx)
-        .await?;
-        sqlx::query(
-            r#"
-INSERT INTO outbox_events(topic,entity_id,payload,dedup_key)
-    VALUES('signal',$1,$2,$3)
-    ON CONFLICT DO NOTHING
-"#,
-        )
-        .bind(&id)
-        .bind(json!({"id":id,"pool":pool,"status":status}))
-        .bind(digest(format!("{id}:{payload}:{status}")))
+        .bind(signal.id)
+        .bind(json!({"id":signal.id,"pool":signal.pool,"status":signal.status}))
+        .bind(digest(format!("{}:{}:{}", signal.id, signal.payload, signal.status)))
         .execute(&mut *tx)
         .await?;
     }

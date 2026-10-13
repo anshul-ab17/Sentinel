@@ -3,7 +3,7 @@ pub mod domain;
 mod events;
 mod transaction;
 pub use events::decode_anchor_event;
-pub use transaction::{account_keys, decode_transaction};
+pub use transaction::{SystemTransfer, account_keys, decode_system_transfers, decode_transaction};
 
 pub const PROGRAM: &str = "dbcij3LWUppWqq96dh6gJWwBifmcGfLSB5D4DuSMaqN";
 pub const DECODER: &str = "anchor-dbc-0.2.1-f552f20";
@@ -67,6 +67,30 @@ mod tests {
             &json!({"transaction":{"message":{"accountKeys":["a"]}},"meta":{"loadedAddresses":{"writable":["b"],"readonly":["c"]}}}),
         );
         assert_eq!(keys, vec![json!("a"), json!("b"), json!("c")]);
+    }
+
+    #[test]
+    fn decodes_only_successful_native_sol_transfer_instructions() {
+        let mut instruction = vec![2, 0, 0, 0];
+        instruction.extend_from_slice(&5_000_000_001u64.to_le_bytes());
+        let transaction = json!({
+            "transaction": {"message": {"accountKeys": ["source", "recipient", "11111111111111111111111111111111"],
+                "instructions": [{"programIdIndex": 2, "accounts": [0, 1], "data": bs58::encode(instruction).into_string()}]}},
+            "meta": {"err": null, "loadedAddresses": {"writable": [], "readonly": []}, "innerInstructions": []}
+        });
+        assert_eq!(
+            decode_system_transfers(&transaction),
+            vec![SystemTransfer {
+                path: vec![0],
+                source: "source".into(),
+                recipient: "recipient".into(),
+                lamports: "5000000001".into(),
+            }]
+        );
+
+        let mut failed = transaction;
+        failed["meta"]["err"] = json!({"InstructionError": [0, "Custom"]});
+        assert!(decode_system_transfers(&failed).is_empty());
     }
     #[test]
     fn genuine_devnet_anchor_initialize_and_swap() {

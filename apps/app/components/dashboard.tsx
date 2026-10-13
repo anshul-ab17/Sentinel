@@ -8,6 +8,7 @@ import { DashboardOverview } from "@app/components/dashboard-overview";
 import { Icon } from "@app/components/icon";
 import { SidebarProvider } from "@app/components/ui/sidebar";
 import { WalletGraph } from "@app/components/wallet-graph";
+import { CoverageStatus } from "@app/components/dashboard/coverage-status";
 import { DashboardNavigation } from "./dashboard/navigation-shell";
 import { LaunchReplay, type ReplayResult } from "./dashboard/replay";
 import { PoolTable, LaunchBoard } from "./dashboard/launches";
@@ -199,13 +200,7 @@ export function Dashboard({ snapshot: initialSnapshot }: { snapshot: Snapshot })
                 </button>
               </div>
             </div>
-            <p className="fine-print" role="status">
-              {snapshot.coverage.mode === "fixture"
-                ? "Fixture evidence · live monitoring is not connected."
-                : snapshot.coverage.freshness === "fresh"
-                  ? `Live finalized Solana data · slot ${snapshot.coverage.asOfSlot ?? "unknown"}.`
-                  : `Finalized Solana data · feed ${snapshot.coverage.freshness ?? "status unknown"} · coverage is partial.`}
-            </p>
+            <CoverageStatus coverage={snapshot.coverage} />
             {error && <p role="alert">{error}</p>}
             {view === "Overview" && (
               <DashboardOverview

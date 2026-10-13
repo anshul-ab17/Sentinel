@@ -155,7 +155,12 @@ export function registerPrivateRoutes(app: FastifyInstance, db: Database, config
     envelope(
       (
         await db.query(
-          "SELECT id,signal_id,status,payload,updated_at FROM in_app_alerts WHERE user_id=$1 ORDER BY updated_at DESC LIMIT 100",
+          `SELECT a.id,a.signal_id,a.status,a.payload,a.updated_at,
+                  COALESCE(x.status,'open') AS acknowledgement
+             FROM in_app_alerts a
+             LEFT JOIN signal_acknowledgements x
+               ON x.user_id=a.user_id AND x.signal_id=a.signal_id
+            WHERE a.user_id=$1 ORDER BY a.updated_at DESC LIMIT 100`,
           [await userFor(db, request)],
         )
       ).rows,

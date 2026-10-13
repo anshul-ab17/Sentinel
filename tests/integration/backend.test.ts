@@ -10,10 +10,163 @@ import { claimJob, createDatabase, transaction } from "../../packages/database/s
 import { dispatchInApp } from "../../apps/worker/src/delivery.ts";
 
 const url = process.env.DATABASE_URL;
+
+function isolateRateLimitAddress(app: Awaited<ReturnType<typeof buildApi>>) {
+  const originalInject = app.inject.bind(app);
+  const token = randomUUID().replaceAll("-", "");
+  const address = `198.18.${Number.parseInt(token.slice(0, 2), 16)}.${Number.parseInt(token.slice(2, 4), 16)}`;
+  app.inject = (async (
+    input: string | { url: string; headers?: Record<string, string | string[]> },
+  ) => {
+    const request = typeof input === "string" ? { url: input } : input;
+    return originalInject({
+      ...request,
+      headers: { ...request.headers, "x-forwarded-for": address },
+    } as never);
+  }) as typeof app.inject;
+}
+
+test(
+  "indexed shark and curve-history routes return only source-backed rows",
+  { skip: !url },
+  async () => {
+    const config = loadConfig({ DATABASE_URL: url, APP_MODE: "fixture" });
+    const db = createDatabase(url!);
+    const app = await buildApi(config, db);
+    const pool = "11111111111111111111111111111111";
+    const mint = "So11111111111111111111111111111111111111112";
+    const wallet = "Vote111111111111111111111111111111111111111";
+    const recipient = "Stake11111111111111111111111111111111111111";
+    const suffix = randomUUID();
+    const swapId = `route-test:${suffix}:swap`;
+    const transferId = `route-test:${suffix}:transfer`;
+    const walletTransferId = `route-test:${suffix}:native-transfer`;
+    const hopTransferId = `route-test:${suffix}:hop-transfer`;
+    const signalId = `route-test-signal:${suffix}`;
+    try {
+      await db.query(
+        "INSERT INTO pools(cluster,address,base_mint,quote_mint,lifecycle,slot) VALUES('fixture',$1,$2,$2,'active_curve',10)",
+        [pool, mint],
+      );
+      for (const [id, signature, slot, kind, payload, path] of [
+        [
+          swapId,
+          `swap-${suffix}`,
+          "11",
+          "swap",
+          {
+            kind: "swap",
+            pool,
+            trader: wallet,
+            base_mint: mint,
+            quote_mint: mint,
+            trade_direction: 1,
+            amount_raw: "500000000",
+            output_amount: "42",
+            quote_reserve_amount: "2",
+            migration_threshold: "3",
+          },
+          [0],
+        ],
+        [
+          transferId,
+          `transfer-${suffix}`,
+          "12",
+          "transfer",
+          {
+            kind: "transfer",
+            pool,
+            wallet,
+            recipient,
+            lamports: "1000",
+          },
+          [1],
+        ],
+      ] as const) {
+        await db.query(
+          "INSERT INTO chain_observations(id,cluster,signature,slot,block_hash,provider,commitment,raw) VALUES($1,'fixture',$2,$3,'route-test','test','finalized',$4)",
+          [id, signature, slot, payload],
+        );
+        await db.query(
+          "INSERT INTO canonical_events(event_id,cluster,pool_address,kind,slot,signature,instruction_path,ordinal,commitment,observation_id,payload) VALUES($1,'fixture',$2,$3,$4,$5,$6,0,'finalized',$1,$7)",
+          [id, pool, kind, slot, signature, JSON.stringify(path), payload],
+        );
+      }
+      await db.query(
+        `INSERT INTO wallet_transfers(event_id,cluster,signature,slot,transaction_index,
+        instruction_path,source_wallet,recipient_wallet,lamports,block_time,observation_id)
+       VALUES($1,'fixture',$2,12,0,'[0]'::jsonb,$3,$4,1000,1700000000,$5)`,
+        [walletTransferId, `transfer-${suffix}`, wallet, recipient, transferId],
+      );
+      await db.query(
+        `INSERT INTO wallet_transfers(event_id,cluster,signature,slot,transaction_index,
+        instruction_path,source_wallet,recipient_wallet,lamports,block_time,observation_id)
+       VALUES($1,'fixture',$2,13,0,'[1]'::jsonb,$3,$4,500,1700000001,$5)`,
+        [hopTransferId, `transfer-hop-${suffix}`, recipient, pool, transferId],
+      );
+      await db.query(
+        `INSERT INTO signals(id,cluster,pool_address,rule_id,rule_version,severity,payload)
+       VALUES($1,'fixture',$2,'large-transfer','0.1.0','medium',$3)`,
+        [signalId, pool, { id: signalId, evidence: [walletTransferId] }],
+      );
+
+      const activity = await app.inject(`/v1/sharks/activity?poolId=${pool}&mint=${mint}`);
+      assert.equal(activity.statusCode, 200);
+      assert.equal(activity.json().data.items[0].wallet, wallet);
+      assert.equal(activity.json().data.items[0].quote_amount_raw, "500000000");
+
+      const leaderboard = await app.inject(
+        `/v1/sharks/wallets?poolId=${pool}&quoteMint=${mint}&segment=above_threshold&thresholdRaw=400000000`,
+      );
+      assert.equal(leaderboard.statusCode, 200);
+      assert.equal(leaderboard.json().data.items[0].wallet, wallet);
+      assert.equal(leaderboard.json().data.items[0].buy_quote_raw, "500000000");
+
+      const trades = await app.inject(`/v1/wallets/${wallet}/trades?poolId=${pool}`);
+      assert.equal(trades.statusCode, 200);
+      assert.equal(trades.json().data.items.length, 1);
+
+      const funding = await app.inject(`/v1/wallets/${recipient}/funding`);
+      assert.equal(funding.statusCode, 200);
+      const directFunding = funding
+        .json()
+        .data.edges.find((edge: { evidence_id: string }) => edge.evidence_id === walletTransferId);
+      assert.ok(directFunding);
+      assert.equal(directFunding.ownership_claim, false);
+      const transferEvidence = await app.inject(`/v1/evidence/${walletTransferId}`);
+      assert.equal(transferEvidence.statusCode, 200);
+      assert.equal(transferEvidence.json().data.payload.kind, "native_sol_transfer");
+      const graph = await app.inject(`/v1/wallets/${wallet}/graph?hops=2`);
+      assert.equal(graph.statusCode, 200);
+      assert.ok(graph.json().data.edges.some((edge: { hop: number }) => edge.hop === 2));
+      const signalEvidence = await app.inject(`/v1/anomalies/${signalId}/evidence`);
+      assert.equal(signalEvidence.statusCode, 200);
+      assert.equal(signalEvidence.json().data.items[0].kind, "native_sol_transfer");
+
+      const history = await app.inject(`/v1/pools/${pool}/history`);
+      assert.equal(history.statusCode, 200);
+      assert.equal(history.json().data.items[0].curve.threshold_progress_bps, "6666");
+    } finally {
+      await db.query("DELETE FROM canonical_events WHERE event_id=ANY($1::text[])", [
+        [swapId, transferId],
+      ]);
+      await db.query("DELETE FROM wallet_transfers WHERE event_id=$1", [walletTransferId]);
+      await db.query("DELETE FROM wallet_transfers WHERE event_id=$1", [hopTransferId]);
+      await db.query("DELETE FROM signals WHERE id=$1", [signalId]);
+      await db.query("DELETE FROM chain_observations WHERE id=ANY($1::text[])", [
+        [swapId, transferId],
+      ]);
+      await db.query("DELETE FROM pools WHERE cluster='fixture' AND address=$1", [pool]);
+      await app.close();
+    }
+  },
+);
+
 test("persistent API, SIWS nonce fencing and tenant authorization", { skip: !url }, async () => {
   const config = loadConfig({ DATABASE_URL: url, APP_MODE: "fixture" });
   const db = createDatabase(url!);
   const app = await buildApi(config, db);
+  isolateRateLimitAddress(app);
   const origin = config.origin;
   async function login() {
     const { publicKey, privateKey } = generateKeyPairSync("ed25519");
@@ -79,6 +232,64 @@ test("persistent API, SIWS nonce fencing and tenant authorization", { skip: !url
     );
     const a = await login(),
       b = await login();
+    const rules = await app.inject("/v1/anomalies/rules");
+    assert.equal(rules.statusCode, 200);
+    assert.ok(rules.json().data.some((rule: { id: string }) => rule.id === "shared-funding"));
+    const signalId = (
+      await db.query("SELECT id FROM signals WHERE cluster='fixture' ORDER BY id LIMIT 1")
+    ).rows[0].id as string;
+    const preferences = await app.inject({
+      url: "/v1/me/alert-rules",
+      headers: { cookie: a.cookie },
+    });
+    assert.equal(preferences.statusCode, 200);
+    assert.equal(
+      preferences.json().data.find((rule: { id: string }) => rule.id === "shared-funding").enabled,
+      true,
+    );
+    assert.equal(
+      (
+        await app.inject({
+          method: "PUT",
+          url: "/v1/me/alert-rules/shared-funding",
+          headers: { origin, cookie: a.cookie },
+          payload: { enabled: false, minimum_severity: "high", cooldown_seconds: 900 },
+        })
+      ).statusCode,
+      200,
+    );
+    const otherPreferences = await app.inject({
+      url: "/v1/me/alert-rules",
+      headers: { cookie: b.cookie },
+    });
+    assert.equal(
+      otherPreferences.json().data.find((rule: { id: string }) => rule.id === "shared-funding")
+        .enabled,
+      true,
+    );
+    assert.equal(
+      (
+        await app.inject({
+          method: "PATCH",
+          url: `/v1/me/anomalies/${signalId}/acknowledgement`,
+          headers: { origin, cookie: a.cookie },
+          payload: { status: "acknowledged", note: "Reviewed against source events" },
+        })
+      ).statusCode,
+      200,
+    );
+    const acknowledged = await app.inject({
+      url: "/v1/anomalies?status=acknowledged",
+      headers: { cookie: a.cookie },
+    });
+    assert.ok(acknowledged.json().data.items.some((item: { id: string }) => item.id === signalId));
+    const hiddenAcknowledgement = await app.inject({
+      url: "/v1/anomalies?status=acknowledged",
+      headers: { cookie: b.cookie },
+    });
+    assert.ok(
+      !hiddenAcknowledgement.json().data.items.some((item: { id: string }) => item.id === signalId),
+    );
     const wrong = await app.inject({
       method: "POST",
       url: "/v1/auth/challenge",

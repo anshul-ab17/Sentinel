@@ -1,6 +1,6 @@
 "use client";
 
-import { useId, useMemo, useState } from "react";
+import { useEffect, useId, useMemo, useState } from "react";
 
 import type { Snapshot } from "@shared/snapshot";
 
@@ -10,6 +10,13 @@ type GraphNode = {
   role: "Buyer" | "Funding source" | "Buyer · source";
   x: number;
   y: number;
+};
+type FundingEdge = {
+  id: string;
+  source: string;
+  wallet: string;
+  lamports: string;
+  timestamp: number | null;
 };
 
 const graphCoordinate = (value: number) => Math.round(value * 1000) / 1000;
@@ -29,11 +36,77 @@ export function WalletGraph({
   const [poolId, setPoolId] = useState(snapshot.pools[0]?.address ?? "");
   const [filter, setFilter] = useState<LinkFilter>(initialFilter);
   const [layout, setLayout] = useState<"graph" | "addresses">("graph");
+  const [indexedFunding, setIndexedFunding] = useState<FundingEdge[] | null>(null);
+  const [fundingLoading, setFundingLoading] = useState(false);
+  const [fundingError, setFundingError] = useState(false);
+  const coverageSlot = snapshot.coverage.asOfSlot;
+
+  useEffect(() => {
+    if (snapshot.coverage.mode !== "live" || !poolId) {
+      setIndexedFunding(null);
+      setFundingError(false);
+      return;
+    }
+    const controller = new AbortController();
+    setFundingLoading(true);
+    setFundingError(false);
+    void fetch(`/v1/pools/${encodeURIComponent(poolId)}/funding-graph?limit=50`, {
+      cache: "no-store",
+      signal: controller.signal,
+    })
+      .then(async (response) => {
+        if (!response.ok) throw new Error("Funding data unavailable");
+        return response.json();
+      })
+      .then((response) => {
+        if (controller.signal.aborted) return;
+        const items = response?.data?.edges;
+        setIndexedFunding(
+          Array.isArray(items)
+            ? items.flatMap((edge: Record<string, unknown>) =>
+                typeof edge.id === "string" &&
+                typeof edge.source === "string" &&
+                typeof edge.wallet === "string" &&
+                typeof edge.lamports === "string"
+                  ? [
+                      {
+                        id: edge.id,
+                        source: edge.source,
+                        wallet: edge.wallet,
+                        lamports: edge.lamports,
+                        timestamp: typeof edge.timestamp === "number" ? edge.timestamp : null,
+                      },
+                    ]
+                  : [],
+              )
+            : [],
+        );
+      })
+      .catch(() => {
+        if (controller.signal.aborted) return;
+        setIndexedFunding([]);
+        setFundingError(true);
+      })
+      .finally(() => {
+        if (!controller.signal.aborted) setFundingLoading(false);
+      });
+    return () => controller.abort();
+  }, [coverageSlot, poolId, snapshot.coverage.mode]);
+
   const data = useMemo(() => {
     const events = snapshot.events.filter((event) => event.pool === poolId);
-    const funding = events.filter(
+    const snapshotFunding = events.filter(
       (event): event is Extract<typeof event, { kind: "funding" }> => event.kind === "funding",
     );
+    const funding: FundingEdge[] =
+      indexedFunding ??
+      snapshotFunding.map((event) => ({
+        id: event.id,
+        source: event.source,
+        wallet: event.wallet,
+        lamports: event.lamports,
+        timestamp: event.timestamp,
+      }));
     const buyers = [
       ...new Set(
         events
@@ -63,7 +136,7 @@ export function WalletGraph({
         });
     });
     return { funding, buyers, sources, addresses, positions };
-  }, [poolId, snapshot.events]);
+  }, [indexedFunding, poolId, snapshot.events]);
   const showFunding = filter !== "trades";
   const showTrades = filter !== "funding";
   const pool = snapshot.pools.find((item) => item.address === poolId);
@@ -74,7 +147,7 @@ export function WalletGraph({
         <div>
           <span className="eyebrow">WALLET INTELLIGENCE</span>
           <h2>{compact ? "Wallet funding network" : "Wallet graph"}</h2>
-          <p>Observed buyer activity and indexed funding links for this pool.</p>
+          <p>Observed buyer activity and finalized transfers before their first observed buy.</p>
         </div>
         {compact ? (
           <button className="text-button" onClick={onOpen}>
@@ -239,6 +312,12 @@ export function WalletGraph({
             </div>
           ) : (
             <div className="wallet-address-list">
+              {fundingLoading && <p className="empty">Loading indexed transfer evidence…</p>}
+              {fundingError && (
+                <p className="empty" role="status">
+                  Funding evidence could not be refreshed. Buyer activity remains available.
+                </p>
+              )}
               {data.addresses.map((address) => (
                 <div className="wallet-address-row" key={address}>
                   <span
@@ -257,7 +336,11 @@ export function WalletGraph({
                 </div>
               ))}
               {data.addresses.length === 0 && (
-                <p className="empty">No wallet activity in this pool.</p>
+                <p className="empty">
+                  {snapshot.coverage.mode === "live"
+                    ? "No direct native SOL funding links were found in the covered window."
+                    : "No wallet activity in this pool."}
+                </p>
               )}
             </div>
           )}
@@ -270,14 +353,16 @@ export function WalletGraph({
       <div className="wallet-graph-legend">
         <span>
           <i className="funding-key" />
-          Direct funding
+          Direct observed funding
         </span>
         <span>
           <i className="trade-key" />
           Observed purchase
         </span>
         <small>
-          Connections represent observed transactions; they do not establish shared ownership.
+          {snapshot.coverage.mode === "live"
+            ? "Transfers are indexed from the configured slot range; they do not establish shared ownership."
+            : "Connections represent fixture transactions; they do not establish shared ownership."}
         </small>
       </div>
     </section>

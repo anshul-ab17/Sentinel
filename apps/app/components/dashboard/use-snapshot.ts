@@ -38,7 +38,7 @@ export function useSnapshot(initialSnapshot: Snapshot) {
       clearTimeout(timer);
       timer = setTimeout(() => void refresh(), 300);
     };
-    for (const event of ["pool", "signal", "assessment"])
+    for (const event of ["pool", "signal", "assessment", "transfer"])
       stream.addEventListener(event, invalidate);
     const poll = setInterval(() => void refresh(), 15000);
     return () => {

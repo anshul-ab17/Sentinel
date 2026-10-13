@@ -317,6 +317,64 @@ mod integration {
         ))?;
         persist_block(&db, &cluster, 510342920, &initialize["result"]).await?;
         persist_block(&db, &cluster, 510343149, &swap["result"]).await?;
+        let (pool, observation, start) = sqlx::query_as::<_, (String, String, String)>(
+            "SELECT pool_address,observation_id,payload->>'timestamp' FROM canonical_events WHERE cluster=$1 AND kind='pool_created' LIMIT 1",
+        )
+        .bind(&cluster)
+        .fetch_one(&db)
+        .await?;
+        let start = start.parse::<i64>()?;
+        for index in 0..5 {
+            let wallet = format!("fixture-buyer-{index}");
+            let event_id = format!("fixture-swap-{cluster}-{index}");
+            let signature = format!("fixture-swap-signature-{cluster}-{index}");
+            let timestamp = start + 10 + index;
+            let payload = json!({
+                "event_id":event_id,"kind":"swap","pool":pool,"trader":wallet,
+                "trade_direction":1,"amount_raw":"1000000000","timestamp":timestamp.to_string()
+            });
+            sqlx::query(
+                "INSERT INTO canonical_events(event_id,cluster,pool_address,kind,slot,signature,instruction_path,ordinal,commitment,observation_id,payload,transaction_index) VALUES($1,$2,$3,'swap',$4::numeric,$5,$6,0,'finalized',$7,$8,100)",
+            )
+            .bind(&event_id)
+            .bind(&cluster)
+            .bind(&pool)
+            .bind((510343150 + index).to_string())
+            .bind(&signature)
+            .bind(json!([index]))
+            .bind(&observation)
+            .bind(payload)
+            .execute(&db)
+            .await?;
+        }
+        for index in 0..3 {
+            let source = "fixture-shared-funder";
+            let recipient = format!("fixture-buyer-{index}");
+            let event_id = format!("fixture-funding-{cluster}-{index}");
+            sqlx::query(
+                "INSERT INTO wallet_transfers(event_id,cluster,signature,slot,transaction_index,instruction_path,source_wallet,recipient_wallet,lamports,block_time,observation_id) VALUES($1,$2,$3,$4::numeric,0,'[0]'::jsonb,$5,$6,$7::numeric,$8,$9)",
+            )
+            .bind(&event_id)
+            .bind(&cluster)
+            .bind(format!("fixture-funding-signature-{cluster}-{index}"))
+            .bind((510343140 + index).to_string())
+            .bind(source)
+            .bind(recipient)
+            .bind(if index == 0 { "100000000000" } else { "1000" })
+            .bind(start + 2)
+            .bind(&observation)
+            .execute(&db)
+            .await?;
+        }
+        crate::analysis::analyze_pool_for_test(&db, &cluster, &pool).await?;
+        let found_rules: Vec<String> = sqlx::query_scalar(
+            "SELECT DISTINCT rule_id FROM signals WHERE cluster=$1 AND status='active'",
+        )
+        .bind(&cluster)
+        .fetch_all(&db)
+        .await?;
+        assert!(found_rules.iter().any(|rule| rule == "shared-funding"));
+        assert!(found_rules.iter().any(|rule| rule == "large-transfer"));
         let before: i64 =
             sqlx::query_scalar("SELECT count(*) FROM canonical_events WHERE cluster=$1")
                 .bind(&cluster)
@@ -373,7 +431,41 @@ DELETE
         sqlx::query(
             r#"
 DELETE
+    FROM signal_revisions
+    WHERE signal_id IN (SELECT id FROM signals WHERE cluster=$1)
+"#,
+        )
+        .bind(&cluster)
+        .execute(&db)
+        .await?;
+        sqlx::query(
+            r#"
+DELETE
+    FROM outbox_events
+    WHERE entity_id IN (SELECT id FROM signals WHERE cluster=$1)
+"#,
+        )
+        .bind(&cluster)
+        .execute(&db)
+        .await?;
+        sqlx::query("DELETE FROM signals WHERE cluster=$1")
+            .bind(&cluster)
+            .execute(&db)
+            .await?;
+        sqlx::query(
+            r#"
+DELETE
     FROM canonical_events
+    WHERE cluster=$1
+"#,
+        )
+        .bind(&cluster)
+        .execute(&db)
+        .await?;
+        sqlx::query(
+            r#"
+DELETE
+    FROM wallet_transfers
     WHERE cluster=$1
 "#,
         )
