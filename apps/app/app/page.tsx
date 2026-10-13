@@ -57,7 +57,7 @@ export default async function Home() {
             <Icon name="arrow" size={17} />
             Open dashboard
           </Link>
-          <WalletConnect />
+          <WalletConnect redirectTo="/dashboard" />
         </div>
       </header>
       <main id="main-content" className="landing-main">
@@ -305,7 +305,6 @@ export default async function Home() {
         </Link>
         <div className="footer-legal">
           <span>Sentinel | Built for the Solana ecosystem.</span>
-          <span>Development | Not financial advice.</span>
         </div>
       </footer>
     </LandingMotion>

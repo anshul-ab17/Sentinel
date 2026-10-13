@@ -25,6 +25,29 @@ export const installedWallets = () =>
         wallet.features["standard:connect"] &&
         (wallet.features["solana:signIn"] || wallet.features["solana:signMessage"]),
     );
+const walletProviders = [
+  {
+    label: "Backpack",
+    matches: (name: string) => name.toLowerCase().includes("backpack"),
+    installUrl: "https://backpack.app/downloads",
+  },
+  {
+    label: "Phantom",
+    matches: (name: string) => name.toLowerCase().includes("phantom"),
+    installUrl: "https://phantom.app/download",
+  },
+  {
+    label: "Coinbase Wallet",
+    matches: (name: string) => name.toLowerCase().includes("coinbase"),
+    installUrl: "https://www.coinbase.com/wallet/downloads",
+  },
+];
+export const featuredWallets = (wallets = installedWallets()) => {
+  return walletProviders.map((provider) => {
+    const wallet = wallets.find((candidate) => provider.matches(candidate.name));
+    return { wallet, label: provider.label, installUrl: provider.installUrl };
+  });
+};
 async function api(path: string, body: unknown) {
   const response = await fetch(path, {
     method: "POST",

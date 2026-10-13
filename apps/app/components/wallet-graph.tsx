@@ -12,6 +12,8 @@ type GraphNode = {
   y: number;
 };
 
+const graphCoordinate = (value: number) => Math.round(value * 1000) / 1000;
+
 export function WalletGraph({
   snapshot,
   compact = false,
@@ -47,8 +49,8 @@ export function WalletGraph({
       positions.set(address, {
         address,
         role: sources.includes(address) ? "Buyer · source" : "Buyer",
-        x: 420 + Math.cos(angle) * 150,
-        y: 210 + Math.sin(angle) * 142,
+        x: graphCoordinate(420 + Math.cos(angle) * 150),
+        y: graphCoordinate(210 + Math.sin(angle) * 142),
       });
     });
     sources.forEach((address, index) => {
@@ -57,7 +59,7 @@ export function WalletGraph({
           address,
           role: "Funding source",
           x: 110,
-          y: ((index + 1) * 420) / (sources.length + 1),
+          y: graphCoordinate(((index + 1) * 420) / (sources.length + 1)),
         });
     });
     return { funding, buyers, sources, addresses, positions };
