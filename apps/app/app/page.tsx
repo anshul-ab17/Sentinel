@@ -17,7 +17,7 @@ import type { Snapshot } from "@shared/snapshot";
 import "./landing.css";
 
 export const metadata: Metadata = {
-  title: "Sentinel · See the story behind the launch",
+  title: "Sentinel",
   description:
     "Explore live Solana launch activity, inspect covered wallet signals, and replay evidence-backed findings.",
 };
