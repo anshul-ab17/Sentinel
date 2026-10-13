@@ -9,6 +9,7 @@ import { createDatabase, type Database } from "../../../packages/database/store.
 import { registerAuth } from "./auth.ts";
 import { persistedSnapshot, seedFixtures } from "./repository.ts";
 import { handleRequest } from "./handler.ts";
+import { createRedisInfrastructure } from "./redis.ts";
 
 export async function buildApi(
   config: RuntimeConfig = loadConfig(),
@@ -21,8 +22,16 @@ export async function buildApi(
     logger: { redact: ["req.headers.cookie", "req.headers.authorization", "req.body.signature"] },
     bodyLimit: 16384,
     requestTimeout: 15000,
-    trustProxy: false,
+    // The API is only exposed through the loopback-bound reverse proxy.
+    trustProxy: true,
   });
+  const redis = createRedisInfrastructure(config.redisUrl, db);
+  try {
+    await redis.connect();
+  } catch (error) {
+    await db.end();
+    throw error;
+  }
   await app.register(swagger, {
     openapi: {
       info: { title: "Sentinel API", version: "0.1.0" },
@@ -74,19 +83,44 @@ export async function buildApi(
     }
   });
   await seedFixtures(db, config);
-  const rate = new Map<string, { count: number; reset: number }>();
   app.addHook("onRequest", async (request, reply) => {
     const key = request.ip + (request.url.startsWith("/v1/auth") ? ":auth" : ":api");
-    const now = Date.now();
-    if (rate.size > 10000) for (const [ip, state] of rate) if (state.reset < now) rate.delete(ip);
-    const state = rate.get(key) ?? { count: 0, reset: now + 60000 };
-    if (state.reset < now) {
-      state.count = 0;
-      state.reset = now + 60000;
+    try {
+      const result = await redis.checkRateLimit(key, key.endsWith(":auth") ? 20 : 300, 60);
+      if (!result.allowed)
+        return reply
+          .code(429)
+          .header("Retry-After", String(result.retryAfter))
+          .send({ error: "rate_limited" });
+    } catch (error) {
+      request.log.error({ error }, "Redis rate limiter unavailable");
+      return reply.code(503).send({ error: "rate_limiter_unavailable" });
     }
-    rate.set(key, state);
-    if (++state.count > (key.endsWith(":auth") ? 20 : 300))
-      return reply.code(429).header("Retry-After", "60").send({ error: "rate_limited" });
+
+    if (request.method !== "GET" || !isCacheableRead(request.url)) return;
+    try {
+      const cached = await redis.getCached(request.url);
+      if (cached !== null)
+        return reply
+          .header("X-Sentinel-Cache", "HIT")
+          .header("Content-Type", "application/json; charset=utf-8")
+          .send(cached);
+    } catch (error) {
+      request.log.warn({ error }, "Redis response cache unavailable");
+    }
+  });
+  app.addHook("onSend", async (request, reply, payload) => {
+    if (request.method !== "GET" || reply.statusCode !== 200 || !isCacheableRead(request.url))
+      return payload;
+    try {
+      await redis.setCached(
+        request.url,
+        Buffer.isBuffer(payload) ? payload.toString("utf8") : String(payload),
+      );
+    } catch (error) {
+      request.log.warn({ error }, "Redis response cache write failed");
+    }
+    return payload;
   });
   app.setErrorHandler((error: Error & { statusCode?: number }, request, reply) => {
     request.log.error({ error: error.message }, "Request failed");
@@ -95,9 +129,9 @@ export async function buildApi(
     });
   });
   registerAuth(app, db, config);
-  registerPublicRoutes(app, db, config);
+  registerPublicRoutes(app, db, config, () => redis.ping());
   registerPrivateRoutes(app, db, config);
-  registerStreamRoutes(app, db);
+  registerStreamRoutes(app, db, redis);
   app.all("/api/*", async (request, reply) => {
     const headers = new Headers();
     for (const [key, value] of Object.entries(request.headers))
@@ -115,7 +149,21 @@ export async function buildApi(
     return reply.send(Buffer.from(await response.arrayBuffer()));
   });
   app.addHook("onClose", async () => {
+    await redis.close();
     await db.end();
   });
   return app;
+}
+
+function isCacheableRead(url: string) {
+  const path = url.split("?", 1)[0];
+  return (
+    path === "/api/snapshot" ||
+    path === "/api/pools" ||
+    path === "/api/alerts" ||
+    /^\/api\/(?:pools|wallets)\/[^/]+(?:\/[^/]+)?$/.test(path) ||
+    /^\/v1\/(?:launches|signals|pools|evidence\/[^/]+|pools\/[^/]+(?:\/events)?|tokens\/[^/]+\/(?:dossier|holders)|wallets\/[^/]+(?:\/graph)?)$/.test(
+      path,
+    )
+  );
 }

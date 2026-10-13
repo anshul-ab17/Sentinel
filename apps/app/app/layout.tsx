@@ -2,6 +2,7 @@ import localFont from "next/font/local";
 
 import type { Metadata } from "next";
 import "./globals.css";
+import "@app/components/wallet-connect.css";
 
 const sans = localFont({
   src: "./fonts/geist-sans.woff2",

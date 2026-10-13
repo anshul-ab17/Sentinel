@@ -5,8 +5,13 @@ import { userFor } from "../auth.ts";
 import type { ServerResponse } from "node:http";
 import type { FastifyInstance } from "fastify";
 import type { Database } from "../../../../packages/database/store.ts";
+import type { RedisInfrastructure } from "../redis.ts";
 
-export function registerStreamRoutes(app: FastifyInstance, db: Database) {
+export function registerStreamRoutes(
+  app: FastifyInstance,
+  db: Database,
+  redis: RedisInfrastructure,
+) {
   const streams = new Map<ServerResponse, string>();
   app.addHook("preClose", async () => {
     for (const stream of streams.keys()) stream.end();
@@ -73,7 +78,9 @@ export function registerStreamRoutes(app: FastifyInstance, db: Database) {
         busy = false;
       }
     };
-    const interval = setInterval(() => void poll(), 1000);
+    const unsubscribe = redis.onOutbox(() => void poll());
+    // Periodic reads recover events if a Redis Pub/Sub message was missed.
+    const interval = setInterval(() => void poll(), 30000);
     const heartbeat = setInterval(() => {
       if (!closed && !busy) reply.raw.write(": heartbeat\n\n");
     }, 15000);
@@ -82,6 +89,7 @@ export function registerStreamRoutes(app: FastifyInstance, db: Database) {
     reply.raw.on("close", () => {
       streams.delete(reply.raw);
       closed = true;
+      unsubscribe();
       clearInterval(interval);
       clearInterval(heartbeat);
       clearTimeout(lifetime);

@@ -47,8 +47,6 @@ export function ApproachAccordion() {
           onClick={() => setActive(index)}
           onKeyDown={(event) => navigate(event, index)}
         >
-          <span className="approach-accordion-photo" aria-hidden="true" />
-          <span className="approach-accordion-shade" aria-hidden="true" />
           <span className="approach-accordion-index" aria-hidden="true">
             0{index + 1}
           </span>

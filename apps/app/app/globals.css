@@ -6,6 +6,34 @@
   --button: var(--primary); --button-text: #211719; --amber: #e4b770; --amber-soft: #352d20;
   --purple: #c6a9ea; --purple-soft: #30283d; --blue: #a0c6e9; --blue-soft: #253344; --error: #ffaaa3;
 }
+
+.route-not-found {
+  min-height: 100svh;
+  display: grid;
+  align-content: center;
+  justify-items: center;
+  gap: 16px;
+  padding: 32px;
+  color: var(--text);
+  text-align: center;
+}
+
+.route-not-found p {
+  color: var(--muted);
+  font-size: 12px;
+  letter-spacing: 0.14em;
+  text-transform: uppercase;
+}
+
+.route-not-found h1 {
+  margin: 0;
+  font-size: clamp(28px, 5vw, 48px);
+}
+
+.route-not-found a {
+  color: var(--accent);
+  text-underline-offset: 4px;
+}
 :root[data-theme="light"] {
   --success: #187354; --success-soft: #eaf5ef;
   color-scheme: light;

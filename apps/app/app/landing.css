@@ -316,21 +316,19 @@ html:has(.landing)::-webkit-scrollbar { display: none; }
 .approach-copy h2 { margin-bottom: 0; }
 .approach-intro-detail { max-width: 39ch; }
 .approach-intro-detail p { font-size: 15px; line-height: 1.85; color: var(--muted); margin-bottom: 24px; }
-.approach-accordion { display: flex; gap: 8px; height: 420px; margin: 0; padding: 16px; border-bottom: 1px solid var(--line); }
-.approach-accordion-card { position: relative; isolation: isolate; flex: 1 1 0; min-width: 0; overflow: hidden; padding: 0; border: 1px solid var(--line); border-radius: 8px; background: var(--panel); color: var(--text); text-align: left; transition: flex-grow 650ms cubic-bezier(.22, 1, .36, 1), border-color 300ms ease; }
+.approach-accordion { display: flex; gap: 8px; height: 300px; margin: 0; padding: 16px; border-bottom: 1px solid var(--line); }
+.approach-accordion-card { position: relative; flex: 1 1 0; min-width: 0; overflow: hidden; padding: 0; border: 1px solid var(--line); border-radius: 8px; background: #e8eef1; color: #26343b; text-align: left; transition: flex-grow 650ms cubic-bezier(.22, 1, .36, 1), border-color 300ms ease, background-color 300ms ease; }
+.approach-accordion-card-1 { background: #eee9e2; color: #39342f; }
+.approach-accordion-card-2 { background: #e7ede8; color: #2e3932; }
 .approach-accordion-card[aria-pressed="true"] { flex-grow: 2.6; border-color: var(--accent); }
-.approach-accordion-photo { position: absolute; inset: 0; z-index: -2; background-image: url('/hero-background.png'); background-size: auto 100%; background-repeat: no-repeat; opacity: .72; transition: transform 650ms cubic-bezier(.22, 1, .36, 1); }
-.approach-accordion-card-0 .approach-accordion-photo { background-position: 15% center; }
-.approach-accordion-card-1 .approach-accordion-photo { background-position: 50% center; }
-.approach-accordion-card-2 .approach-accordion-photo { background-position: 85% center; }
-.approach-accordion-card[aria-pressed="true"] .approach-accordion-photo { transform: scale(1.04); }
-:root[data-theme="light"] .approach-accordion-photo { background-image: url('/hero-background-light-v2.png'); }
-.approach-accordion-shade { position: absolute; inset: 0; z-index: -1; background: linear-gradient(0deg, var(--panel) 0%, transparent 75%), linear-gradient(180deg, var(--panel), transparent 30%); }
 .approach-accordion-index { position: absolute; top: 24px; left: 24px; font-family: var(--font-mono), monospace; font-size: 11px; color: var(--accent); }
 .approach-accordion-label { position: absolute; bottom: 32px; left: 24px; right: 24px; display: flex; align-items: start; gap: 12px; font-size: clamp(18px, 1.8vw, 26px); font-weight: 500; line-height: 1.35; letter-spacing: -.7px; }
 .approach-accordion-label svg { flex-shrink: 0; margin-top: 6px; color: var(--accent); }
 .approach-accordion-expand { position: absolute; top: 20px; right: 20px; color: var(--accent); rotate: -45deg; transition: rotate 400ms ease; }
 .approach-accordion-card[aria-pressed="true"] .approach-accordion-expand { rotate: 0deg; }
+:root[data-theme="dark"] .approach-accordion-card { background: #202b31; color: #e6edf0; }
+:root[data-theme="dark"] .approach-accordion-card-1 { background: #2b2926; color: #eee9e2; }
+:root[data-theme="dark"] .approach-accordion-card-2 { background: #222d28; color: #e5eee8; }
 .landing-approach > .hero-product { width: 100%; margin-inline: auto; }
 @media (max-width: 760px) {
   .approach-copy { display: block; margin-bottom: 28px; }

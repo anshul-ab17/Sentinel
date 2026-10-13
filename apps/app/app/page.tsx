@@ -249,7 +249,6 @@ export default async function Home() {
           <LandingFaq />
         </section>
 
-        <div className="landing-ruler" aria-hidden="true" />
         <section className="landing-closing" aria-labelledby="closing-heading">
           <div>
             <h2 id="closing-heading">
@@ -264,7 +263,6 @@ export default async function Home() {
             <Icon name="arrow" size={18} />
           </Link>
         </section>
-        <div className="landing-ruler" aria-hidden="true" />
       </main>
       <footer className="landing-footer">
         <div className="footer-intro">

@@ -34,6 +34,7 @@ export function loadConfig(env: Record<string, string | undefined> = process.env
     origin,
     domain,
     databaseUrl,
+    redisUrl: env.REDIS_URL ?? "redis://127.0.0.1:6379",
     port,
     host: env.HOST ?? "127.0.0.1",
     secureCookies: url.protocol === "https:",

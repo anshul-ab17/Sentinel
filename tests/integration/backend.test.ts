@@ -49,6 +49,8 @@ test("persistent API, SIWS nonce fencing and tenant authorization", { skip: !url
     const snapshot = (await app.inject("/api/snapshot")).json();
     assert.equal(snapshot.coverage.persistence, "PostgreSQL");
     assert.equal(snapshot.events.length, 28);
+    const cachedSnapshot = await app.inject("/api/snapshot");
+    assert.equal(cachedSnapshot.headers["x-sentinel-cache"], "HIT");
     const before = (await db.query("SELECT count(*) FROM canonical_events WHERE cluster='fixture'"))
       .rows[0].count;
     // Repeated fixture initialization must not produce duplicate volume/outbox.
@@ -195,10 +197,8 @@ test("SSE filters private invalidations and supports durable resume", { skip: !u
       "INSERT INTO outbox_events(user_id,topic,entity_id,payload,dedup_key) VALUES($1,'secret',$2,$3,$2)",
       [user, key + ":private", { secret: "private-note" }],
     );
-    await db.query(
-      "INSERT INTO outbox_events(topic,entity_id,payload,dedup_key) VALUES('test',$1,'{}',$1)",
-      [key + ":public"],
-    );
+    await app.inject("/api/snapshot");
+    assert.equal((await app.inject("/api/snapshot")).headers["x-sentinel-cache"], "HIT");
     const listening = await app.listen({ host: "127.0.0.1", port: 0 });
     const response = await fetch(listening + "/v1/stream", {
       headers: { "Last-Event-ID": marker },
@@ -207,6 +207,16 @@ test("SSE filters private invalidations and supports durable resume", { skip: !u
     assert.equal(response.status, 200);
     const reader = response.body!.getReader();
     let text = "";
+    while (!text.includes(": connected")) {
+      const chunk = await reader.read();
+      if (chunk.done) break;
+      text += new TextDecoder().decode(chunk.value);
+    }
+    await new Promise((resolve) => setTimeout(resolve, 100));
+    await db.query(
+      "INSERT INTO outbox_events(topic,entity_id,payload,dedup_key) VALUES('test',$1,'{}',$1)",
+      [key + ":public"],
+    );
     while (!text.includes("event: test")) {
       const chunk = await reader.read();
       if (chunk.done) break;
@@ -215,6 +225,7 @@ test("SSE filters private invalidations and supports durable resume", { skip: !u
     assert.ok(text.includes("event: test"));
     assert.ok(!text.includes("private-note"));
     assert.ok(!text.includes("event: secret"));
+    assert.notEqual((await app.inject("/api/snapshot")).headers["x-sentinel-cache"], "HIT");
     await reader.cancel();
     assert.equal(
       (

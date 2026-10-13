@@ -1,10 +1,22 @@
 services:
+  redis:
+    image: redis:7-alpine
+    command: ["redis-server", "--appendonly", "yes"]
+    ports:
+      - "127.0.0.1:${REDIS_PORT:-6379}:6379"
+    volumes:
+      - sentinel_redis:/data
+    healthcheck:
+      test: ["CMD", "redis-cli", "ping"]
+      interval: 5s
+      timeout: 3s
+      retries: 10
   postgres:
     image: postgres:17-alpine
     environment:
-      POSTGRES_DB: sentinel
-      POSTGRES_USER: sentinel
-      POSTGRES_PASSWORD: sentinel
+      POSTGRES_DB: ${POSTGRES_DB:-sentinel}
+      POSTGRES_USER: ${POSTGRES_USER:-sentinel}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:-sentinel}
     ports:
       - "127.0.0.1:${DATABASE_PORT:-5432}:5432"
     volumes:
@@ -17,7 +29,7 @@ services:
   migrate:
     image: sentinel-backend-node:0.1.0
     environment:
-      DATABASE_URL: postgresql://sentinel:sentinel@postgres:5432/sentinel
+      DATABASE_URL: postgresql://${POSTGRES_USER:-sentinel}:${POSTGRES_PASSWORD:-sentinel}@postgres:5432/${POSTGRES_DB:-sentinel}
     command: ["node", "scripts/migrate.mjs"]
     depends_on:
       postgres:
@@ -31,7 +43,8 @@ services:
       - path: .env
         required: false
     environment:
-      DATABASE_URL: postgresql://sentinel:sentinel@postgres:5432/sentinel
+      DATABASE_URL: postgresql://${POSTGRES_USER:-sentinel}:${POSTGRES_PASSWORD:-sentinel}@postgres:5432/${POSTGRES_DB:-sentinel}
+      REDIS_URL: redis://redis:6379
       HOST: 0.0.0.0
       PORT: 4000
       APP_MODE: ${APP_MODE:-live}
@@ -40,6 +53,8 @@ services:
     depends_on:
       migrate:
         condition: service_completed_successfully
+      redis:
+        condition: service_healthy
     init: true
     restart: unless-stopped
     mem_limit: 512m
@@ -54,7 +69,7 @@ services:
       - path: .env
         required: false
     environment:
-      DATABASE_URL: postgresql://sentinel:sentinel@postgres:5432/sentinel
+      DATABASE_URL: postgresql://${POSTGRES_USER:-sentinel}:${POSTGRES_PASSWORD:-sentinel}@postgres:5432/${POSTGRES_DB:-sentinel}
       APP_MODE: ${APP_MODE:-live}
     command: ["node", "--import", "./scripts/register-aliases.mjs", "--experimental-strip-types", "apps/worker/src/service.ts"]
     depends_on:
@@ -72,7 +87,7 @@ services:
       - path: .env
         required: false
     environment:
-      DATABASE_URL: postgresql://sentinel:sentinel@postgres:5432/sentinel
+      DATABASE_URL: postgresql://${POSTGRES_USER:-sentinel}:${POSTGRES_PASSWORD:-sentinel}@postgres:5432/${POSTGRES_DB:-sentinel}
       APP_MODE: ${APP_MODE:-live}
     depends_on:
       migrate:
@@ -100,3 +115,4 @@ services:
     mem_limit: 1g
 volumes:
   sentinel_db:
+  sentinel_redis:

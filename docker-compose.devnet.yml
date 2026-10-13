@@ -1,0 +1,19 @@
+services:
+  api:
+    ports: !override
+      - "127.0.0.1:4001:4000"
+    environment:
+      SOLANA_CLUSTER: devnet
+      SOLANA_HTTP_URL: ${DEVNET_SOLANA_HTTP_URL:-https://api.devnet.solana.com}
+      SOLANA_HTTP_FALLBACK_URLS: ${DEVNET_SOLANA_HTTP_FALLBACK_URLS:-}
+      SOLANA_GENESIS_HASH: EtWTRABZaYq6iMfeYKouRu166VU2xqa1wcaWoxPkrZBG
+      SOLANA_WS_URLS: ${DEVNET_SOLANA_WS_URLS:-wss://api.devnet.solana.com}
+      RPC_MIN_INTERVAL_MS: ${DEVNET_RPC_MIN_INTERVAL_MS:-1000}
+  engine:
+    environment:
+      SOLANA_CLUSTER: devnet
+      SOLANA_HTTP_URL: ${DEVNET_SOLANA_HTTP_URL:-https://api.devnet.solana.com}
+      SOLANA_HTTP_FALLBACK_URLS: ${DEVNET_SOLANA_HTTP_FALLBACK_URLS:-}
+      SOLANA_GENESIS_HASH: EtWTRABZaYq6iMfeYKouRu166VU2xqa1wcaWoxPkrZBG
+      SOLANA_WS_URLS: ${DEVNET_SOLANA_WS_URLS:-wss://api.devnet.solana.com}
+      RPC_MIN_INTERVAL_MS: ${DEVNET_RPC_MIN_INTERVAL_MS:-1000}

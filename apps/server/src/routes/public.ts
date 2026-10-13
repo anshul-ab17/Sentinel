@@ -19,14 +19,22 @@ const pageQuery = {
     lifecycle: { type: "string", maxLength: 32 },
   },
 };
-export function registerPublicRoutes(app: FastifyInstance, db: Database, config: RuntimeConfig) {
+export function registerPublicRoutes(
+  app: FastifyInstance,
+  db: Database,
+  config: RuntimeConfig,
+  checkRedis: () => Promise<string> = async () => "PONG",
+) {
   const cluster = config.mode === "fixture" ? "fixture" : config.cluster;
   const envelope = async (data: unknown) => ({ ...(await metadata(db, config)), data });
   app.get("/health/live", async () => ({ status: "ok", mode: config.mode }));
   app.get("/v1/openapi.json", async () => app.swagger());
   app.get("/health/ready", async (_request, reply) => {
+    let databaseReady = false;
     try {
       await db.query("SELECT 1");
+      databaseReady = true;
+      await checkRedis();
       const meta = await metadata(db, config);
       if (config.mode === "live" && meta.freshness !== "fresh")
         return reply.code(503).send({
@@ -35,9 +43,13 @@ export function registerPublicRoutes(app: FastifyInstance, db: Database, config:
           provider: "stale_or_unverified",
           ...meta,
         });
-      return { status: "ready", database: "ready", ...meta };
+      return { status: "ready", database: "ready", redis: "ready", ...meta };
     } catch {
-      return reply.code(503).send({ status: "not_ready", database: "unavailable" });
+      return reply.code(503).send({
+        status: "not_ready",
+        database: databaseReady ? "ready" : "unavailable",
+        redis: databaseReady ? "unavailable" : "unknown",
+      });
     }
   });
   app.get<{ Querystring: { limit: number; cursor?: string; quote?: string; lifecycle?: string } }>(
