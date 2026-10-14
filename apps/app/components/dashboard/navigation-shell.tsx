@@ -102,25 +102,28 @@ export function DashboardNavigation({
                 <SidebarMenu>
                   {views
                     .filter((item) => item.group === group)
-                    .map((item) => (
-                      <SidebarMenuItem key={item.name}>
-                        <SidebarMenuButton
-                          tooltip={item.label}
-                          isActive={view === item.name}
-                          title={item.label}
-                          aria-label={item.name}
-                          aria-current={view === item.name ? "page" : undefined}
-                          onClick={() => {
-                            setView(item.name);
-                            setQuery("");
-                          }}
-                        >
-                          <Icon name={item.icon} size={18} />
-                          <span className="nav-text">{item.label}</span>
-                          {item.name === "Alerts" && <b>{snapshot.alerts.length}</b>}
-                        </SidebarMenuButton>
-                      </SidebarMenuItem>
-                    ))}
+                    .map((item) => {
+                      const ItemIcon = item.icon;
+                      return (
+                        <SidebarMenuItem key={item.name}>
+                          <SidebarMenuButton
+                            tooltip={item.label}
+                            isActive={view === item.name}
+                            title={item.label}
+                            aria-label={item.name}
+                            aria-current={view === item.name ? "page" : undefined}
+                            onClick={() => {
+                              setView(item.name);
+                              setQuery("");
+                            }}
+                          >
+                            <ItemIcon size={18} strokeWidth={1.75} aria-hidden="true" />
+                            <span className="nav-text">{item.label}</span>
+                            {item.name === "Alerts" && <b>{snapshot.alerts.length}</b>}
+                          </SidebarMenuButton>
+                        </SidebarMenuItem>
+                      );
+                    })}
                 </SidebarMenu>
               </SidebarGroup>
             ))}

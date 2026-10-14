@@ -4,8 +4,12 @@
 }
 @media (prefers-reduced-motion: no-preference) {
   .landing .landing-primary, .landing .landing-secondary, .landing .landing-nav-cta {
-    transition: transform 180ms ease, background 180ms ease, border-color 180ms ease;
+    transition: transform 180ms ease, background 180ms ease, border-color 180ms ease, box-shadow 180ms ease, filter 180ms ease;
   }
+  .landing-hero .hero-actions > a > svg { transition: transform 180ms ease; }
+  .landing-hero .hero-actions > a:hover { transform: translateY(-2px); }
+  .landing-hero .hero-actions > a:active { transform: translateY(0) scale(.98); }
+  .landing-hero .hero-actions > a:hover > svg { transform: translateX(3px); }
   .landing a > svg, .landing .workflow-icon {
     transition: transform 220ms ease;
   }
@@ -71,6 +75,9 @@ html:has(.landing)::-webkit-scrollbar { display: none; }
 .hero-actions { display: flex; flex-wrap: wrap; gap: 10px; }
 .landing-hero .landing-primary { background: #91aab9; border-color: #91aab9; color: #101b22; min-height: 42px; padding: 11px 18px; font-size: 12px; }
 .landing-hero .landing-secondary { background: rgb(8 9 11 / .45); border-color: #68737c; color: #f1f3f5; min-height: 42px; padding: 11px 18px; font-size: 12px; }
+.landing-hero .hero-actions > a:focus-visible { outline: 2px solid var(--accent); outline-offset: 3px; }
+.landing-hero .landing-primary:hover { filter: brightness(1.08); box-shadow: 0 7px 20px rgb(11 24 31 / .24); }
+.landing-hero .landing-secondary:hover { background: rgb(255 255 255 / .12); border-color: #a4b2ba; box-shadow: 0 6px 18px rgb(0 0 0 / .15); }
 .landing-header .landing-nav-cta { background: #23333d; color: #a4c3d4; border: 1px solid #344751; }
 .landing .landing-header .theme-toggle, .landing-header .wallet-connect { color: #f1f3f5; background: rgb(8 9 11 / .55); border: 1px solid #344751; border-radius: 8px; }
 .landing .landing-header .theme-toggle { border-radius: 4px; border-color: rgb(255 255 255 / .1); }
@@ -329,8 +336,14 @@ html:has(.landing)::-webkit-scrollbar { display: none; }
 :root[data-theme="dark"] .approach-accordion-card { background: #202b31; color: #e6edf0; }
 :root[data-theme="dark"] .approach-accordion-card-1 { background: #2b2926; color: #eee9e2; }
 :root[data-theme="dark"] .approach-accordion-card-2 { background: #222d28; color: #e5eee8; }
-.landing-approach > .hero-product { width: 100%; margin-inline: auto; }
+.landing-approach > .hero-product { display: flex; flex-direction: column; width: 100%; height: clamp(640px, 52vw, 720px); margin-inline: auto; }
+.landing-approach > .hero-product > .product-window-panel:not([hidden]) { flex: 1; min-height: 0; }
+.landing-approach > .hero-product > .product-window-panel > .hero-product-body { height: 100%; }
+.landing-approach > .hero-product > .product-window-panel > .approach-accordion { height: 100%; }
+.landing-approach .hero-visual, .landing-approach .launch-preview { height: 100%; }
 @media (max-width: 760px) {
+  .landing-approach > .hero-product { height: 720px; }
+  .landing-approach > .hero-product > .product-window-panel > .approach-accordion { height: 100%; }
   .approach-copy { display: block; margin-bottom: 28px; }
   .approach-intro-detail { margin-top: 24px; }
   .approach-accordion { flex-direction: column; height: 650px; gap: 8px; }
@@ -353,6 +366,8 @@ html:has(.landing)::-webkit-scrollbar { display: none; }
 :root[data-theme="light"] .landing-hero .landing-secondary,
 :root[data-theme="light"] .landing .landing-header .theme-toggle,
 :root[data-theme="light"] .landing-header .wallet-connect { color: #242b30; background: #fbf8f1; border-color: #c8c4bd; }
+:root[data-theme="light"] .landing-hero .landing-primary:hover { filter: brightness(1.1); box-shadow: 0 7px 20px rgb(42 62 74 / .2); }
+:root[data-theme="light"] .landing-hero .landing-secondary:hover { background: #fff; border-color: #7d8d96; box-shadow: 0 6px 18px rgb(42 62 74 / .12); }
 :root[data-theme="light"] .landing-header .wallet-connect-message { color: #242b30; background: #fbf8f1; border-color: #c8c4bd; }
 @media (max-width: 760px) {
   :root[data-theme="light"] .hero-shade { background: linear-gradient(90deg, rgb(251 248 241 / .94), rgb(251 248 241 / .55)), linear-gradient(0deg, rgb(251 248 241 / .4), transparent 50%); }

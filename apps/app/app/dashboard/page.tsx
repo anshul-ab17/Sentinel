@@ -1,7 +1,7 @@
 import { Dashboard } from "@app/components/dashboard";
+import { SignInRedirect } from "@app/components/dashboard/sign-in-redirect";
 import { WorkspaceReconnect } from "@app/components/workspace-reconnect";
 import { cookies } from "next/headers";
-import { redirect } from "next/navigation";
 
 import type { Metadata } from "next";
 import type { Snapshot } from "@shared/snapshot";
@@ -11,7 +11,7 @@ export const dynamic = "force-dynamic";
 
 export default async function DashboardPage() {
   const session = (await cookies()).get("sentinel_session")?.value;
-  if (!session) redirect("/signup?next=%2Fdashboard");
+  if (!session) return <SignInRedirect />;
 
   const apiUrl = process.env.API_SERVER_URL ?? "http://127.0.0.1:4000";
   let authStatus: number;
@@ -25,7 +25,7 @@ export default async function DashboardPage() {
   } catch {
     return <WorkspaceReconnect />;
   }
-  if (authStatus === 401) redirect("/signup?next=%2Fdashboard");
+  if (authStatus === 401) return <SignInRedirect />;
   if (authStatus !== 200) return <WorkspaceReconnect />;
 
   let snapshot: Snapshot;

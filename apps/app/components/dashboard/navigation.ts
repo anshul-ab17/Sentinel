@@ -1,5 +1,20 @@
 import type { ModuleView } from "@app/components/dashboard-module";
-import type { IconName } from "@app/components/icon";
+import {
+  BellRing,
+  Bookmark,
+  ChartNoAxesCombined,
+  ChartPie,
+  Droplets,
+  FileSearch,
+  GitFork,
+  LayoutDashboard,
+  Orbit,
+  Radar,
+  ScanSearch,
+  Wallet,
+  Waves,
+  type LucideIcon,
+} from "lucide-react";
 
 export type View =
   | "Overview"
@@ -12,23 +27,25 @@ export type View =
   | "Funding Graph"
   | "Anomaly Engine"
   | ModuleView;
-export const views: { name: View; label: string; group: string; icon: IconName }[] = [
-  { name: "Overview", label: "Overview", group: "Monitor", icon: "grid" },
-  { name: "Launches", label: "Launch Radar", group: "Monitor", icon: "launch" },
-  { name: "DBC Explorer", label: "DBC Explorer", group: "Monitor", icon: "database" },
-  { name: "Alerts", label: "Smart Alerts", group: "Monitor", icon: "bell" },
-  { name: "Launch Autopsy", label: "Token Dossier", group: "Investigate", icon: "replay" },
-  { name: "Wallet Graph", label: "Wallet Intelligence", group: "Investigate", icon: "wallet" },
-  { name: "Funding Graph", label: "Funding Graph", group: "Investigate", icon: "network" },
-  { name: "Whale Tracker", label: "Whale Tracker", group: "Investigate", icon: "whale" },
-  { name: "Anomaly Engine", label: "Anomaly Engine", group: "Analyze", icon: "signal" },
-  { name: "Holder Concentration", label: "Holder Concentration", group: "Analyze", icon: "pie" },
-  { name: "Liquidity Monitor", label: "Liquidity Monitor", group: "Analyze", icon: "drop" },
-  { name: "Analytics", label: "Analytics", group: "Analyze", icon: "graph" },
+type SidebarView = { name: View; label: string; group: string; icon: LucideIcon };
+
+export const views: SidebarView[] = [
+  { name: "Overview", label: "Overview", group: "Monitor", icon: LayoutDashboard },
+  { name: "Launches", label: "Launch Radar", group: "Monitor", icon: Radar },
+  { name: "DBC Explorer", label: "DBC Explorer", group: "Monitor", icon: Orbit },
+  { name: "Alerts", label: "Smart Alerts", group: "Monitor", icon: BellRing },
+  { name: "Launch Autopsy", label: "Token Dossier", group: "Investigate", icon: FileSearch },
+  { name: "Wallet Graph", label: "Wallet Intelligence", group: "Investigate", icon: Wallet },
+  { name: "Funding Graph", label: "Funding Graph", group: "Investigate", icon: GitFork },
+  { name: "Whale Tracker", label: "Whale Tracker", group: "Investigate", icon: Waves },
+  { name: "Anomaly Engine", label: "Anomaly Engine", group: "Analyze", icon: ScanSearch },
+  { name: "Holder Concentration", label: "Holder Concentration", group: "Analyze", icon: ChartPie },
+  { name: "Liquidity Monitor", label: "Liquidity Monitor", group: "Analyze", icon: Droplets },
+  { name: "Analytics", label: "Analytics", group: "Analyze", icon: ChartNoAxesCombined },
   {
     name: "Saved investigations",
     label: "Saved investigations",
     group: "Workspace",
-    icon: "bookmark",
+    icon: Bookmark,
   },
 ];

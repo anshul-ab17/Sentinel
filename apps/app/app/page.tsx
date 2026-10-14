@@ -64,7 +64,7 @@ export default async function Home() {
         <section className="landing-hero" aria-labelledby="hero-heading">
           <Image
             className="hero-background hero-background-dark"
-            src="/hero-background.png"
+            src="/bg.jpg"
             alt=""
             fill
             sizes="100vw"
@@ -72,7 +72,7 @@ export default async function Home() {
           />
           <Image
             className="hero-background hero-background-light"
-            src="/hero-background-light-v2.png"
+            src="/bg-%20light.png"
             alt=""
             fill
             sizes="100vw"
@@ -81,15 +81,23 @@ export default async function Home() {
           <div className="hero-shade" aria-hidden="true" />
           <div className="hero-copy">
             <span className="hero-status">
-              <Icon name="shield" size={15} />
+              <svg
+                width="15"
+                height="15"
+                viewBox="0 0 24 24"
+                fill="currentColor"
+                aria-hidden="true"
+              >
+                <path d="M5.2 5h13.4c.3 0 .4.3.2.5l-2 2c-.1.1-.2.2-.4.2H3c-.3 0-.4-.3-.2-.5l2-2c.1-.1.2-.2.4-.2Zm.1 5.6h13.4c.3 0 .4.3.2.5l-2 2c-.1.1-.2.2-.4.2H3.1c-.3 0-.4-.3-.2-.5l2-2c.1-.1.2-.2.4-.2Zm-.1 5.6h13.4c.3 0 .4.3.2.5l-2 2c-.1.1-.2.2-.4.2H3c-.3 0-.4-.3-.2-.5l2-2c.1-.1.2-.2.4-.2Z" />
+              </svg>
               Solana launch intelligence
             </span>
             <h1 id="hero-heading">
               <span className="hero-line">
-                <span>Every launch.</span>
+                <span>Spot the shift. </span>
               </span>
               <span className="hero-line">
-                <span>A clearer picture.</span>
+                <span> Know the risk.</span>
               </span>
             </h1>
             <p className="hero-description">
