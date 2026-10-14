@@ -37,7 +37,7 @@ const walletProviders = [
     installUrl: "https://backpack.app/downloads",
   },
   {
-    label: "Coinbase Wallet",
+    label: "Coinbase ",
     matches: (name: string) => name.toLowerCase().includes("coinbase"),
     installUrl: "https://www.coinbase.com/wallet/downloads",
   },
