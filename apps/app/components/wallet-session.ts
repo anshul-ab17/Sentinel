@@ -27,19 +27,34 @@ export const installedWallets = () =>
     );
 const walletProviders = [
   {
-    label: "Backpack",
-    matches: (name: string) => name.toLowerCase().includes("backpack"),
-    installUrl: "https://backpack.app/downloads",
-  },
-  {
     label: "Phantom",
     matches: (name: string) => name.toLowerCase().includes("phantom"),
     installUrl: "https://phantom.app/download",
   },
   {
+    label: "Backpack",
+    matches: (name: string) => name.toLowerCase().includes("backpack"),
+    installUrl: "https://backpack.app/downloads",
+  },
+  {
     label: "Coinbase Wallet",
     matches: (name: string) => name.toLowerCase().includes("coinbase"),
     installUrl: "https://www.coinbase.com/wallet/downloads",
+  },
+  {
+    label: "Solflare",
+    matches: (name: string) => name.toLowerCase().includes("solflare"),
+    installUrl: "https://solflare.com/download",
+  },
+  {
+    label: "Torus",
+    matches: (name: string) => name.toLowerCase().includes("torus"),
+    installUrl: "https://app.tor.us/",
+  },
+  {
+    label: "Ledger",
+    matches: (name: string) => name.toLowerCase().includes("ledger"),
+    installUrl: "https://www.ledger.com/ledger-live",
   },
 ];
 export const featuredWallets = (wallets = installedWallets()) => {

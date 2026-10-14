@@ -16,7 +16,7 @@ export default function SignupPage() {
         <BrandLogo size={32} />
         <h1 id="signup-heading">Connect your wallet</h1>
         <p className="signup-description">Choose Backpack, Phantom, or Coinbase to continue.</p>
-        <WalletConnect redirectTo="/dashboard" />
+        <WalletConnect redirectTo="/dashboard" variant="signup" />
       </section>
     </main>
   );
