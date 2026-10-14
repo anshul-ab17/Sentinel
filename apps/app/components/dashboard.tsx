@@ -8,14 +8,15 @@ import { DashboardOverview } from "@app/components/dashboard-overview";
 import { Icon } from "@app/components/icon";
 import { SidebarProvider } from "@app/components/ui/sidebar";
 import { WalletGraph } from "@app/components/wallet-graph";
-import { CoverageStatus } from "@app/components/dashboard/coverage-status";
+import { CoverageStatus, type CoverageWindow } from "@app/components/dashboard/coverage-status";
 import { DashboardNavigation } from "./dashboard/navigation-shell";
 import { LaunchReplay, type ReplayResult } from "./dashboard/replay";
-import { PoolTable, LaunchBoard } from "./dashboard/launches";
+import { PoolTable } from "./dashboard/launches";
 import { InvestigationPanels } from "./dashboard/signals";
 import { views, type View } from "./dashboard/navigation";
 import { useSnapshot } from "./dashboard/use-snapshot";
 import { useSavedInvestigations } from "./dashboard/use-saved-investigations";
+import { DbcExplorer } from "./dashboard/dbc-explorer";
 import "@app/app/dashboard/dashboard.css";
 import "@app/app/dashboard/premium-dashboard.css";
 import "@app/app/dashboard/reference-dashboard.css";
@@ -24,6 +25,7 @@ import "@app/app/dashboard/overview-refresh.css";
 export function Dashboard({ snapshot: initialSnapshot }: { snapshot: Snapshot }) {
   const { snapshot, poolId, setPoolId } = useSnapshot(initialSnapshot);
   const [view, setView] = useState<View>("Overview");
+  const [coverageWindow, setCoverageWindow] = useState<CoverageWindow>("24h");
   const [query, setQuery] = useState("");
   const [selectedAlert, setSelectedAlert] = useState<string | null>(snapshot.alerts[0]?.id ?? null);
   const [severity, setSeverity] = useState("all");
@@ -52,6 +54,22 @@ export function Dashboard({ snapshot: initialSnapshot }: { snapshot: Snapshot })
       signals: snapshot.alerts.filter((alert) => alert.pool === pool.address).length,
     };
   });
+  const subtitles: Record<View, string> = {
+    Overview: "Launch intelligence, backed by evidence.",
+    Launches: "Discover covered Meteora DBC launches and inspect observed activity.",
+    "DBC Explorer": "Explore pool identity and indexed events from Meteora DBC.",
+    Alerts: "Review rule-based signals with their supporting on-chain evidence.",
+    "Anomaly Engine": "Inspect detections, rule context, and linked source events.",
+    Analytics: "Analyze indexed launch and purchase activity across current coverage.",
+    "Funding Graph": "Trace observed funding transfers between wallets.",
+    "Wallet Graph": "Explore observed wallet relationships and evidence links.",
+    "Launch Autopsy": "Replay a launch and trace each finding to its evidence.",
+    "Whale Tracker": "Review large transfers recorded in the current observation window.",
+    "Holder Concentration": "Review what current purchase coverage can establish about buyers.",
+    "Liquidity Monitor": "Inspect liquidity observations available from indexed DBC events.",
+    "Saved investigations": "Return to evidence you saved in this wallet session.",
+    Settings: "Manage your wallet session and workspace preferences.",
+  };
   const filteredPools = poolRows
     .filter(
       (pool) =>
@@ -77,6 +95,7 @@ export function Dashboard({ snapshot: initialSnapshot }: { snapshot: Snapshot })
   const investigationPanelProps = {
     snapshot,
     filteredAlerts,
+    totalAlerts: snapshot.alerts.length,
     severity,
     setSeverity,
     selectedAlert,
@@ -177,19 +196,9 @@ export function Dashboard({ snapshot: initialSnapshot }: { snapshot: Snapshot })
             <div className="page-heading">
               <div>
                 <h1>{views.find((item) => item.name === view)?.label ?? view}</h1>
-                <p>
-                  {view === "Overview"
-                    ? "Launch intelligence, backed by evidence."
-                    : view === "Launch Autopsy"
-                      ? "Replay a launch and trace each finding to its evidence."
-                      : "Explore activity and the evidence behind each signal."}
-                </p>
+                <p>{subtitles[view]}</p>
               </div>
               <div className="dashboard-heading-actions">
-                <span className="dashboard-sample-window">
-                  <Icon name="calendar" size={17} />
-                  {snapshot.coverage.mode === "fixture" ? "Fixture window" : "Finalized window"}
-                </span>
                 <button
                   className="primary"
                   onClick={() => {
@@ -201,7 +210,11 @@ export function Dashboard({ snapshot: initialSnapshot }: { snapshot: Snapshot })
                 </button>
               </div>
             </div>
-            <CoverageStatus coverage={snapshot.coverage} />
+            <CoverageStatus
+              coverage={snapshot.coverage}
+              windowRange={coverageWindow}
+              onWindowChange={setCoverageWindow}
+            />
             {error && <p role="alert">{error}</p>}
             {view === "Overview" && (
               <DashboardOverview
@@ -217,10 +230,13 @@ export function Dashboard({ snapshot: initialSnapshot }: { snapshot: Snapshot })
                 }}
                 onLaunches={() => setView("Launches")}
                 onAlerts={() => setView("Alerts")}
-                onGraph={() => setView("Wallet Graph")}
+                windowRange={coverageWindow}
               />
             )}
             {view === "DBC Explorer" && (
+              <DbcExplorer snapshot={snapshot} poolId={poolId} setPoolId={setPoolId} />
+            )}
+            {view === "Launches" && (
               <PoolTable
                 snapshot={snapshot}
                 filteredPools={filteredPools}
@@ -231,6 +247,8 @@ export function Dashboard({ snapshot: initialSnapshot }: { snapshot: Snapshot })
                 setPoolId={setPoolId}
                 setResult={setResult}
                 setView={setView}
+                title="Launch Radar"
+                subtitle="All covered Meteora DBC pools, sorted by observed buy volume."
               />
             )}
             {view === "Analytics" && (
@@ -262,15 +280,6 @@ export function Dashboard({ snapshot: initialSnapshot }: { snapshot: Snapshot })
                 }}
               />
             )}
-            {view === "Launches" && (
-              <LaunchBoard
-                snapshot={snapshot}
-                filteredPools={filteredPools}
-                setPoolId={setPoolId}
-                setResult={setResult}
-                setView={setView}
-              />
-            )}
             {view === "Alerts" && <InvestigationPanels {...investigationPanelProps} />}
             {view === "Wallet Graph" && (
               <>
@@ -296,7 +305,8 @@ export function Dashboard({ snapshot: initialSnapshot }: { snapshot: Snapshot })
             )}
             <footer>
               <span>
-                Sentinel AI <span className="footer-dot">·</span> Evidence-first intelligence
+                <strong className="footer-brand-accent">Sentinel AI</strong>{" "}
+                <span className="footer-dot">·</span> Evidence-first intelligence
               </span>
               <span>Research tool. Signals are not proof of wrongdoing.</span>
             </footer>

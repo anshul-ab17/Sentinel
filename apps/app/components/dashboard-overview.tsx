@@ -1,9 +1,8 @@
 "use client";
 
 import { Icon } from "@app/components/icon";
-import { ActivityChart } from "@app/components/activity-chart";
-import { WalletGraph } from "@app/components/wallet-graph";
 import { OverviewActivity, SignalProfile } from "@app/components/dashboard/overview-activity";
+import type { CoverageWindow } from "@app/components/dashboard/coverage-status";
 
 import type { Snapshot } from "@shared/snapshot";
 import type { Alert } from "@shared/events";
@@ -14,21 +13,22 @@ const clock = (timestamp: number) => new Date(timestamp * 1000).toISOString().sl
 
 function SparkBars({ values, warning = false }: { values: number[]; warning?: boolean }) {
   const maximum = Math.max(1, ...values);
+  const points = values.map((value, index) => ({
+    x: 2 + (index / Math.max(1, values.length - 1)) * 72,
+    y: 37 - (value / maximum) * 32,
+  }));
+  const line = points
+    .map((point, index) => `${index ? "L" : "M"}${point.x.toFixed(1)},${point.y.toFixed(1)}`)
+    .join(" ");
+  const area = `${line} L74,42 L2,42 Z`;
   return (
     <svg
       className={`metric-spark ${warning ? "warning" : ""}`}
       viewBox="0 0 76 44"
       aria-hidden="true"
     >
-      {values.map((value, index) => (
-        <rect
-          key={index}
-          x={index * 6 + 1}
-          y={42 - Math.max(2, (value / maximum) * 38)}
-          width="2.5"
-          height={Math.max(2, (value / maximum) * 38)}
-        />
-      ))}
+      <path d={area} className="metric-spark-area" />
+      <path d={line} className="metric-spark-line" />
     </svg>
   );
 }
@@ -39,19 +39,23 @@ export function DashboardOverview({
   onEvidence,
   onLaunches,
   onAlerts,
-  onGraph,
+  windowRange,
 }: {
   snapshot: Snapshot;
   onLaunch: (pool: string) => void;
   onEvidence: (alert: Alert) => void;
   onLaunches: () => void;
   onAlerts: () => void;
-  onGraph: () => void;
+  windowRange: CoverageWindow;
 }) {
   const buys = snapshot.events.filter((event) => event.kind === "buy");
   const volume = buys.reduce((sum, event) => sum + BigInt(event.quoteLamports), 0n);
-  const start = Math.min(...snapshot.pools.map((pool) => pool.createdAt));
-  const end = Math.max(start + 1, ...snapshot.events.map((event) => event.timestamp));
+  const observedTimes = [
+    ...snapshot.pools.map((pool) => pool.createdAt),
+    ...snapshot.events.map((event) => event.timestamp),
+  ];
+  const start = observedTimes.length ? Math.min(...observedTimes) : 0;
+  const end = Math.max(start + 1, ...observedTimes);
   const checkpoints = Array.from(
     { length: 12 },
     (_, index) => start + ((end - start) * (index + 1)) / 12,
@@ -72,6 +76,12 @@ export function DashboardOverview({
     checkpoints.map(
       (through) => snapshot.events.filter((event) => event.timestamp <= through).length,
     ),
+  ];
+  const hasHistory = [
+    buys.length,
+    snapshot.pools.length,
+    snapshot.alerts.length,
+    snapshot.events.length,
   ];
   const rows = snapshot.pools.map((pool, index) => {
     const purchases = buys.filter((event) => event.pool === pool.address);
@@ -132,13 +142,15 @@ export function DashboardOverview({
               )}
             </strong>
             <small>{metric.note}</small>
-            <SparkBars values={histories[index]} warning={index === 2} />
+            {hasHistory[index] > 1 && new Set(histories[index]).size > 1 && (
+              <SparkBars values={histories[index]} warning={index === 2} />
+            )}
           </article>
         ))}
       </div>
       <div className="overview-insight-grid">
-        <OverviewActivity snapshot={snapshot} />
-        <SignalProfile snapshot={snapshot} />
+        <OverviewActivity snapshot={snapshot} windowLabel={windowRange} />
+        <SignalProfile snapshot={snapshot} range={windowRange} />
       </div>
       <div className="overview-dashboard-grid">
         <section className="panel radar-panel">
@@ -167,7 +179,7 @@ export function DashboardOverview({
                 </tr>
               </thead>
               <tbody>
-                {rows.map((pool) => (
+                {rows.slice(0, 5).map((pool) => (
                   <tr key={pool.address} data-flagged={pool.signals > 0}>
                     <td>
                       <div className="token-cell">
@@ -226,10 +238,10 @@ export function DashboardOverview({
               <Icon name="arrow" size={14} />
             </button>
           </div>
-          {snapshot.alerts.slice(0, 3).map((alert) => (
+          {snapshot.alerts.slice(0, 5).map((alert) => (
             <article className="evidence-feed-row" key={alert.id}>
               <span className={`feed-alert-icon ${alert.severity}`}>
-                <Icon name="signal" size={19} />
+                <i aria-hidden="true" />
               </span>
               <div>
                 <h3>{alert.title}</h3>
@@ -245,71 +257,13 @@ export function DashboardOverview({
             </article>
           ))}
           {!snapshot.alerts.length && (
-            <p className="empty">No detection signals in the covered events.</p>
+            <p className="empty feed-empty-state">
+              <i aria-hidden="true" />
+              No detection signals in the covered events.
+            </p>
           )}
         </section>
       </div>
-      <div className="overview-network-grid">
-        <ActivityChart snapshot={snapshot} compact />
-        <WalletGraph snapshot={snapshot} compact onOpen={onGraph} />
-      </div>
-      <section className="panel overview-investigation-activity">
-        <div className="panel-heading">
-          <div>
-            <h2>Investigation activity</h2>
-            <p>Latest analysis and evidence collection</p>
-          </div>
-          <button className="text-button" onClick={onAlerts}>
-            View all activity
-            <Icon name="arrow" size={14} />
-          </button>
-        </div>
-        <div className="table-scroll">
-          <table>
-            <thead>
-              <tr>
-                <th>Time (UTC)</th>
-                <th>Token</th>
-                <th>Event</th>
-                <th>Priority</th>
-                <th>Details</th>
-                <th>Evidence</th>
-              </tr>
-            </thead>
-            <tbody>
-              {snapshot.alerts.map((alert) => {
-                const pool = rows.find((pool) => pool.address === alert.pool);
-                return (
-                  <tr key={alert.id}>
-                    <td>{clock(alert.timestamp)}</td>
-                    <td>
-                      <div className="activity-token">
-                        <span className={`token token-${pool?.index ?? 0}`}>
-                          {pool?.symbol.slice(0, 1)}
-                        </span>
-                        {pool?.symbol ?? alert.pool}
-                      </div>
-                    </td>
-                    <td>{alert.title}</td>
-                    <td>
-                      <span className={`badge ${alert.severity === "high" ? "amber" : "neutral"}`}>
-                        {alert.severity}
-                      </span>
-                    </td>
-                    <td className="activity-observation">{alert.observation}</td>
-                    <td>
-                      <button className="text-button" onClick={() => onEvidence(alert)}>
-                        View evidence
-                        <Icon name="arrow" size={13} />
-                      </button>
-                    </td>
-                  </tr>
-                );
-              })}
-            </tbody>
-          </table>
-        </div>
-      </section>
     </div>
   );
 }

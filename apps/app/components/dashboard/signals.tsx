@@ -9,6 +9,7 @@ import type { Alert } from "@shared/events";
 
 type AlertProps = {
   filteredAlerts: Alert[];
+  totalAlerts: number;
   severity: string;
   setSeverity: (value: string) => void;
   selectedAlert: string | null;
@@ -30,6 +31,7 @@ export function InvestigationPanels(props: InvestigationProps) {
       <div>
         <AlertsPanel
           filteredAlerts={props.filteredAlerts}
+          totalAlerts={props.totalAlerts}
           severity={props.severity}
           setSeverity={props.setSeverity}
           selectedAlert={props.selectedAlert}
@@ -49,6 +51,7 @@ export function InvestigationPanels(props: InvestigationProps) {
 
 export function AlertsPanel({
   filteredAlerts,
+  totalAlerts,
   severity,
   setSeverity,
   selectedAlert,
@@ -91,7 +94,13 @@ export function AlertsPanel({
             <span className="arrow">↗</span>
           </button>
         ))}
-        {!filteredAlerts.length && <p className="empty">No alerts match your filters.</p>}
+        {!filteredAlerts.length && (
+          <p className="empty">
+            {totalAlerts
+              ? "No signals match this filter. Check the coverage status for the indexed window."
+              : "No detection signals are present in current indexed coverage."}
+          </p>
+        )}
       </div>
     </section>
   );

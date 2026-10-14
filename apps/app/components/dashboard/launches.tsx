@@ -17,6 +17,8 @@ type Props = {
   setPoolId: (id: string) => void;
   setResult: (result: null) => void;
   setView: (view: "Launch Autopsy") => void;
+  title?: string;
+  subtitle?: string;
 };
 
 export function PoolTable({
@@ -29,12 +31,14 @@ export function PoolTable({
   setPoolId,
   setResult,
   setView,
+  title = "Launches",
+  subtitle,
 }: Props) {
   return (
     <section className="panel pools-panel">
       <div className="panel-heading">
         <div className="heading-inline">
-          <h2>Launches</h2>
+          <h2>{title}</h2>
           <span className="count-label">{filteredPools.length}</span>
         </div>
         <div className="table-controls">
@@ -60,11 +64,13 @@ export function PoolTable({
           </select>
         </div>
       </div>
+      {subtitle && <p className="pool-table-subtitle">{subtitle}</p>}
       <div className="table-scroll">
         <table>
           <thead>
             <tr>
               <th>Token / pool</th>
+              <th>First observed (UTC)</th>
               <th className="numeric">Purchases</th>
               <th className="numeric">Buy volume</th>
               <th>Detection status</th>
@@ -88,6 +94,11 @@ export function PoolTable({
                         <code>{pool.address}</code>
                       </div>
                     </div>
+                  </td>
+                  <td>
+                    <time>
+                      {new Date(pool.createdAt * 1000).toISOString().replace("T", " ").slice(0, 19)}
+                    </time>
                   </td>
                   <td className="numeric">{pool.buys}</td>
                   <td className="numeric volume-cell">

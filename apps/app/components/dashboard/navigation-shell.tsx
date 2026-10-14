@@ -1,9 +1,11 @@
 "use client";
+import { useEffect, useState } from "react";
 import { BrandLogo } from "@app/components/brand-logo";
 import { ThemeToggle } from "@app/components/theme-toggle";
 import { Icon } from "@app/components/icon";
 import { SidebarProfile } from "@app/components/sidebar-profile";
 import { CommandPalette } from "@app/components/command-palette";
+import { getWallets } from "@app/components/wallet-session";
 import {
   Sidebar,
   SidebarHeader,
@@ -38,6 +40,43 @@ export function DashboardNavigation({
   setPoolId,
   setSelectedAlert,
 }: Props) {
+  const [profileIcon, setProfileIcon] = useState<string | null>(null);
+  const [profileLabel, setProfileLabel] = useState("Open workspace settings");
+
+  useEffect(() => {
+    let active = true;
+    const refresh = async () => {
+      try {
+        const response = await fetch("/v1/me", { credentials: "same-origin" });
+        const { wallets } = response.ok
+          ? ((await response.json()) as { wallets: { address: string }[] })
+          : { wallets: [] };
+        const address = wallets[0]?.address;
+        const wallet = address
+          ? getWallets()
+              .get()
+              .find((candidate) =>
+                candidate.accounts.some((account) => account.address === address),
+              )
+          : undefined;
+        if (active) {
+          setProfileIcon(wallet?.icon ?? null);
+          setProfileLabel(
+            address ? `${address.slice(0, 4)}…${address.slice(-4)}` : "Open workspace settings",
+          );
+        }
+      } catch {
+        if (active) setProfileIcon(null);
+      }
+    };
+    void refresh();
+    window.addEventListener("sentinel-session", refresh);
+    return () => {
+      active = false;
+      window.removeEventListener("sentinel-session", refresh);
+    };
+  }, []);
+
   return (
     <>
       <header className="topbar">
@@ -50,7 +89,6 @@ export function DashboardNavigation({
           <BrandLogo size={30} />
         </a>
         <div className="breadcrumb">
-          <Icon name="grid" size={16} />
           Workspace <span>/</span>{" "}
           <strong>{views.find((item) => item.name === view)?.label ?? view}</strong>
         </div>
@@ -82,6 +120,15 @@ export function DashboardNavigation({
             <Icon name="bell" size={19} />
             {snapshot.alerts.length > 0 && <i />}
           </button>
+          <button
+            type="button"
+            className="dashboard-topbar-profile"
+            aria-label={profileLabel}
+            title={profileLabel}
+            onClick={() => setView("Settings")}
+          >
+            {profileIcon ? <img src={profileIcon} alt="" /> : <BrandLogo size={28} />}
+          </button>
         </div>
       </header>
       <Sidebar>
@@ -109,7 +156,6 @@ export function DashboardNavigation({
                           <SidebarMenuButton
                             tooltip={item.label}
                             isActive={view === item.name}
-                            title={item.label}
                             aria-label={item.name}
                             aria-current={view === item.name ? "page" : undefined}
                             onClick={() => {
