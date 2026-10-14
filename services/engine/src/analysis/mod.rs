@@ -3,8 +3,12 @@ use sentinel_engine::digest;
 use serde_json::{Value, json};
 use sqlx::{PgPool, Row};
 
-#[path = "analysis/funding.rs"]
+mod detectors;
 mod funding;
+mod persistence;
+
+use detectors::{ObservedSwap, evaluate_early_buy_burst, evaluate_liquidity_shift};
+use persistence::{SignalRecord, persist_signal};
 
 const FUNDING_LOOKBACK_SECONDS: u64 = 86_400;
 const LARGE_TRANSFER_LAMPORTS: u128 = 100_000_000_000;
@@ -75,7 +79,7 @@ SELECT payload
     WHERE cluster=$1
     AND pool_address=$2
     AND active
-    AND kind IN ('pool_created','swap')
+    AND kind IN ('pool_created','swap','curve_complete')
     ORDER BY slot,transaction_index,instruction_path,ordinal LIMIT 10000
 "#,
     )
@@ -97,6 +101,7 @@ SELECT payload
     let mut first_buy = std::collections::BTreeMap::<String, u64>::new();
     let mut buyer_evidence = std::collections::BTreeMap::<String, Vec<String>>::new();
     let mut evidence = vec![created["event_id"].clone()];
+    let mut observed_swaps = Vec::new();
     let mut timestamp = start;
     for event in &events {
         if event["kind"] != "swap" || event["trade_direction"] != 1 {
@@ -129,8 +134,27 @@ SELECT payload
             .or_default()
             .push(event["event_id"].as_str().unwrap_or_default().to_owned());
         evidence.push(event["event_id"].clone());
+        observed_swaps.push(ObservedSwap {
+            timestamp: time,
+            wallet: trader.to_owned(),
+            event_id: event["event_id"].as_str().unwrap_or_default().to_owned(),
+            quote_reserve: event["quote_reserve_amount"]
+                .as_str()
+                .and_then(|value| value.parse::<u128>().ok()),
+        });
         timestamp = timestamp.max(time);
     }
+    evaluate_early_buy_burst(db, cluster, pool, start, timestamp, &observed_swaps).await?;
+    evaluate_liquidity_shift(
+        db,
+        cluster,
+        pool,
+        start,
+        timestamp,
+        &events,
+        &observed_swaps,
+    )
+    .await?;
     funding::evaluate(funding::Evaluation {
         db,
         cluster,
@@ -200,54 +224,4 @@ SELECT payload
 #[cfg(test)]
 pub(crate) async fn analyze_pool_for_test(db: &PgPool, cluster: &str, pool: &str) -> Result<()> {
     analyze(db, cluster, pool).await
-}
-
-pub(super) struct SignalRecord<'a> {
-    pub cluster: &'a str,
-    pub pool: &'a str,
-    pub id: &'a str,
-    pub rule_id: &'a str,
-    pub severity: &'a str,
-    pub status: &'a str,
-    pub payload: &'a Value,
-}
-
-pub(super) async fn persist_signal(db: &PgPool, signal: SignalRecord<'_>) -> Result<()> {
-    let mut tx = db.begin().await?;
-    let changed = sqlx::query(
-        r#"
-INSERT INTO signals(id,cluster,pool_address,rule_id,rule_version,severity,status,payload)
-VALUES($1,$2,$3,$4,'0.1.0',$5,$6,$7)
-ON CONFLICT(id) DO UPDATE
-SET status=excluded.status,payload=excluded.payload,updated_at=now()
-WHERE signals.payload<>excluded.payload OR signals.status<>excluded.status
-RETURNING id
-"#,
-    )
-    .bind(signal.id)
-    .bind(signal.cluster)
-    .bind(signal.pool)
-    .bind(signal.rule_id)
-    .bind(signal.severity)
-    .bind(signal.status)
-    .bind(signal.payload)
-    .fetch_optional(&mut *tx)
-    .await?;
-    if changed.is_some() {
-        sqlx::query("INSERT INTO signal_revisions(signal_id,payload) VALUES($1,$2)")
-            .bind(signal.id)
-            .bind(signal.payload)
-            .execute(&mut *tx)
-            .await?;
-        sqlx::query(
-            "INSERT INTO outbox_events(topic,entity_id,payload,dedup_key) VALUES('signal',$1,$2,$3) ON CONFLICT DO NOTHING",
-        )
-        .bind(signal.id)
-        .bind(json!({"id":signal.id,"pool":signal.pool,"status":signal.status}))
-        .bind(digest(format!("{}:{}:{}", signal.id, signal.payload, signal.status)))
-        .execute(&mut *tx)
-        .await?;
-    }
-    tx.commit().await?;
-    Ok(())
 }

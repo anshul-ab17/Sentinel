@@ -19,6 +19,29 @@ test("live configuration defaults to a public Solana endpoint and never uses syn
     }).rpcFallbackUrls,
     ["https://one.example", "https://two.example"],
   );
+  const providers = loadConfig({
+    DATABASE_URL: "postgres://localhost/test",
+    RPCFAST_HTTP_URL: "https://rpcfast.example/cluster",
+    RPCFAST_WS_URL: "wss://rpcfast.example/stream",
+    SOLAMI_HTTP_URL: "https://solami.example/cluster",
+    SOLAMI_WS_URL: "wss://solami.example/stream",
+    PANTA_API_KEY: "server-only-test-key",
+  });
+  assert.equal(providers.rpcUrl, "https://rpcfast.example/cluster");
+  assert.deepEqual(providers.rpcFallbackUrls, ["https://solami.example/cluster"]);
+  assert.equal(providers.rpcFastWsUrl, "wss://rpcfast.example/stream");
+  assert.equal(providers.solamiWsUrl, "wss://solami.example/stream");
+  assert.equal(providers.pantaApiKey, "server-only-test-key");
+  assert.equal(providers.aiDailyMaxRequests, 100);
+  assert.equal(
+    loadConfig({ DATABASE_URL: "postgres://localhost/test", AI_DAILY_MAX_REQUESTS: "0" })
+      .aiDailyMaxRequests,
+    0,
+  );
+  assert.throws(
+    () => loadConfig({ DATABASE_URL: "postgres://localhost/test", AI_DAILY_MAX_REQUESTS: "-1" }),
+    /AI_DAILY_MAX_REQUESTS/,
+  );
   assert.throws(
     () =>
       loadConfig({

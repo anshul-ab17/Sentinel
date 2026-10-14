@@ -7,6 +7,13 @@ export function loadConfig(env: Record<string, string | undefined> = process.env
     throw new Error("Invalid SOLANA_CLUSTER");
   const aiMode = env.AI_MODE ?? "off";
   if (!["off", "shadow"].includes(aiMode)) throw new Error("AI_MODE must be off or shadow");
+  const aiDailyMaxRequests = Number(env.AI_DAILY_MAX_REQUESTS ?? "100");
+  if (
+    !Number.isSafeInteger(aiDailyMaxRequests) ||
+    aiDailyMaxRequests < 0 ||
+    aiDailyMaxRequests > 100_000
+  )
+    throw new Error("AI_DAILY_MAX_REQUESTS must be an integer from 0 to 100000");
   const origin = env.APP_ORIGIN ?? "http://localhost:3000";
   const url = new URL(origin);
   if (origin !== url.origin) throw new Error("APP_ORIGIN must be an origin without a path");
@@ -20,6 +27,21 @@ export function loadConfig(env: Record<string, string | undefined> = process.env
     devnet: "https://api.devnet.solana.com",
     testnet: "https://api.testnet.solana.com",
   };
+  const rpcUrl =
+    env.SOLANA_HTTP_URL || env.RPCFAST_HTTP_URL || env.SOLAMI_HTTP_URL || defaultRpcUrls[cluster];
+  const rpcFallbackUrls = [
+    env.RPCFAST_HTTP_URL,
+    env.SOLAMI_HTTP_URL,
+    env.SOLANA_HTTP_FALLBACK_URLS ?? env.SOLANA_HTTP_FALLBACK_URL ?? "",
+  ]
+    .filter(Boolean)
+    .join(",")
+    .split(",")
+    .map((fallback) => fallback.trim())
+    .filter(
+      (fallback, index, urls) =>
+        Boolean(fallback) && fallback !== rpcUrl && urls.indexOf(fallback) === index,
+    );
   if (
     aiMode === "shadow" &&
     (!env.TYPESAFE_API_KEY || !env.JEV_MODEL || /latest/.test(env.JEV_MODEL))
@@ -31,6 +53,7 @@ export function loadConfig(env: Record<string, string | undefined> = process.env
     mode: mode as "fixture" | "live",
     cluster,
     aiMode: aiMode as "off" | "shadow",
+    aiDailyMaxRequests,
     origin,
     domain,
     databaseUrl,
@@ -38,11 +61,13 @@ export function loadConfig(env: Record<string, string | undefined> = process.env
     port,
     host: env.HOST ?? "127.0.0.1",
     secureCookies: url.protocol === "https:",
-    rpcUrl: env.SOLANA_HTTP_URL || defaultRpcUrls[cluster],
-    rpcFallbackUrls: (env.SOLANA_HTTP_FALLBACK_URLS ?? env.SOLANA_HTTP_FALLBACK_URL ?? "")
-      .split(",")
-      .map((url) => url.trim())
-      .filter(Boolean),
+    rpcUrl,
+    rpcFastHttpUrl: env.RPCFAST_HTTP_URL,
+    solamiHttpUrl: env.SOLAMI_HTTP_URL,
+    rpcFallbackUrls,
+    rpcFastWsUrl: env.RPCFAST_WS_URL,
+    solamiWsUrl: env.SOLAMI_WS_URL,
+    pantaApiKey: env.PANTA_API_KEY,
     jevModel: env.JEV_MODEL,
     jevKey: env.TYPESAFE_API_KEY,
     jevBaseUrl: env.TYPESAFE_BASE_URL ?? "https://api.typesafe.ai",

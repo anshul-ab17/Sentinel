@@ -44,6 +44,12 @@ test(
     const hopTransferId = `route-test:${suffix}:hop-transfer`;
     const signalId = `route-test-signal:${suffix}`;
     try {
+      const pantaStatus = await app.inject("/v1/providers/panta/status");
+      assert.equal(pantaStatus.statusCode, 200);
+      assert.equal(pantaStatus.json().configured, false);
+      const pantaMarkets = await app.inject("/v1/providers/panta/markets");
+      assert.equal(pantaMarkets.statusCode, 503);
+      assert.equal(pantaMarkets.json().error, "provider_not_configured");
       await db.query(
         "INSERT INTO pools(cluster,address,base_mint,quote_mint,lifecycle,slot) VALUES('fixture',$1,$2,$2,'active_curve',10)",
         [pool, mint],

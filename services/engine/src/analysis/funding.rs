@@ -3,9 +3,10 @@ use serde_json::{Value, json};
 use sqlx::{PgPool, Row};
 use std::collections::{BTreeMap, BTreeSet};
 
+use super::persistence::{SignalRecord, persist_signal};
 use super::{
     FUNDING_LOOKBACK_SECONDS, LARGE_TRANSFER_LAMPORTS, SHARED_FUNDING_MIN_BUYERS,
-    SHARED_FUNDING_MIN_SHARE_BPS, SignalRecord, digest, persist_signal,
+    SHARED_FUNDING_MIN_SHARE_BPS, digest,
 };
 
 pub(super) struct Evaluation<'a> {

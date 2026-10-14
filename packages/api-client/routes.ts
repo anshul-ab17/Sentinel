@@ -32,6 +32,8 @@ export const routes = [
   "GET /v1/me/alert-rules",
   "PUT /v1/me/alert-rules/{ruleId}",
   "GET /v1/pools/{address}/history",
+  "GET /v1/providers/panta/status",
+  "GET /v1/providers/panta/markets",
   "PATCH /v1/watchlists/{id}",
   "GET /v1/watchlists/{id}",
   "DELETE /v1/watchlists/{id}",

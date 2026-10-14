@@ -7,6 +7,24 @@ import type { Database } from "../../../../packages/database/store.ts";
 
 const supportedRules = [
   {
+    id: "early-buy-burst",
+    version: "0.1.0",
+    title: "Early buy burst",
+    severity: "medium",
+    description: "Counts attributed DBC buys in the first ten seconds after pool creation.",
+    limitations: [
+      "Fast buying can be ordinary launch demand or automation; it is not coordination evidence",
+    ],
+  },
+  {
+    id: "liquidity-shift",
+    version: "0.1.0",
+    title: "DBC quote reserve shift",
+    severity: "high",
+    description: "Detects an indexed DBC quote-reserve decline of at least 25% between swaps.",
+    limitations: ["Migration, ordinary sells and incomplete indexing can explain the change"],
+  },
+  {
     id: "early-buyer-concentration",
     version: "0.1.0",
     title: "Early buyer concentration",

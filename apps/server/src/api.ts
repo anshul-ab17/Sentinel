@@ -7,6 +7,7 @@ import { registerStreamRoutes } from "./routes/stream.ts";
 import { registerSharkRoutes } from "./routes/sharks.ts";
 import { registerAnomalyRoutes } from "./routes/anomalies.ts";
 import { registerPoolHistoryRoutes } from "./routes/pool-history.ts";
+import { registerPantaRoutes } from "./routes/panta.ts";
 import { loadConfig, type RuntimeConfig } from "../../../packages/config/runtime.ts";
 import { createDatabase, type Database } from "../../../packages/database/store.ts";
 import { registerAuth } from "./auth.ts";
@@ -71,6 +72,7 @@ export async function buildApi(
     const path = options.url;
     if (
       path.startsWith("/v1/") &&
+      !path.startsWith("/v1/providers/") &&
       !path.startsWith("/v1/auth/") &&
       !["/v1/me", "/v1/stream", "/v1/openapi.json"].includes(path) &&
       !path.endsWith("/analyze") &&
@@ -136,6 +138,7 @@ export async function buildApi(
   registerSharkRoutes(app, db, config);
   registerAnomalyRoutes(app, db, config);
   registerPoolHistoryRoutes(app, db, config);
+  registerPantaRoutes(app, config);
   registerPrivateRoutes(app, db, config);
   registerStreamRoutes(app, db, redis);
   app.all("/api/*", async (request, reply) => {
@@ -169,6 +172,7 @@ function isCacheableRead(url: string) {
     path === "/api/alerts" ||
     path === "/v1/sharks/activity" ||
     path === "/v1/sharks/wallets" ||
+    path === "/v1/providers/panta/markets" ||
     /^\/api\/(?:pools|wallets)\/[^/]+(?:\/[^/]+)?$/.test(path) ||
     /^\/v1\/(?:launches|signals|pools|evidence\/[^/]+|pools\/[^/]+(?:\/events)?|tokens\/[^/]+\/(?:dossier|holders)|wallets\/[^/]+(?:\/graph)?)$/.test(
       path,

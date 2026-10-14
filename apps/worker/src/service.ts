@@ -3,6 +3,7 @@ import { randomUUID } from "node:crypto";
 import { loadConfig } from "../../../packages/config/runtime.ts";
 import { createDatabase, claimJob, transaction } from "../../../packages/database/store.ts";
 import { evidenceCacheKey, JevAdapter, POLICY_VERSION } from "../../../packages/ai/jev.ts";
+import { jevClassification, jevTokenUsage, reserveDailyShadowRequest } from "./shadow-budget.ts";
 import { dispatchInApp } from "./delivery.ts";
 
 const config = loadConfig(),
@@ -51,12 +52,18 @@ while (!stopping) {
     const key = evidenceCacheKey(state, config.jevModel ?? "template-v1");
     let result = (await db.query("SELECT result FROM ai_assessments WHERE cache_key=$1", [key]))
       .rows[0]?.result;
+    let reservedShadowRequest = false;
     if (!result) {
       if (adapter) {
-        try {
-          result = await adapter.evaluate(state);
-        } catch {
-          result = { status: "ai_unavailable", evidence_ids: evidence };
+        reservedShadowRequest = await reserveDailyShadowRequest(db, config.aiDailyMaxRequests);
+        if (!reservedShadowRequest) {
+          result = { status: "budget_exhausted", evidence_ids: evidence };
+        } else {
+          try {
+            result = await adapter.evaluate(state);
+          } catch {
+            result = { status: "ai_unavailable", evidence_ids: evidence };
+          }
         }
       } else
         result = {
@@ -77,6 +84,45 @@ while (!stopping) {
         "INSERT INTO ai_assessments(cache_key,model,mode,result) VALUES($1,$2,$3,$4) ON CONFLICT DO NOTHING",
         [key, config.jevModel ?? "template-v1", config.aiMode, result],
       );
+      if (config.aiMode === "shadow") {
+        const usage = jevTokenUsage(result);
+        const status =
+          typeof result.status === "string"
+            ? result.status
+            : reservedShadowRequest
+              ? "completed"
+              : "cached";
+        await client.query(
+          `INSERT INTO ai_shadow_evaluations(
+             processing_job_id,investigation_id,cluster,pool_address,cache_key,model,status,
+             classification,signal_ids,evidence_ids,result,input_tokens,output_tokens)
+           VALUES($1,$2,$3,$4,$5,$6,$7,$8,$9,$10,$11,$12,$13)
+           ON CONFLICT(processing_job_id) DO NOTHING`,
+          [
+            job.id,
+            job.payload.investigation_id ?? null,
+            job.payload.cluster,
+            job.payload.pool,
+            key,
+            config.jevModel,
+            status,
+            jevClassification(result),
+            signals.map((signal) => signal.id),
+            evidence,
+            result,
+            usage.input,
+            usage.output,
+          ],
+        );
+        if (reservedShadowRequest) {
+          await client.query(
+            `UPDATE ai_shadow_budget_usage
+                SET input_tokens=input_tokens+$1,output_tokens=output_tokens+$2,updated_at=now()
+              WHERE usage_day=(now() AT TIME ZONE 'UTC')::date`,
+            [usage.input, usage.output],
+          );
+        }
+      }
       await client.query(
         "INSERT INTO outbox_events(user_id,topic,entity_id,payload,dedup_key) VALUES($1,'assessment',$2,$3,$4) ON CONFLICT DO NOTHING",
         [
