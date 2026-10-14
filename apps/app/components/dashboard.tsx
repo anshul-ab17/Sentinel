@@ -19,6 +19,7 @@ import { useSavedInvestigations } from "./dashboard/use-saved-investigations";
 import "@app/app/dashboard/dashboard.css";
 import "@app/app/dashboard/premium-dashboard.css";
 import "@app/app/dashboard/reference-dashboard.css";
+import "@app/app/dashboard/overview-refresh.css";
 
 export function Dashboard({ snapshot: initialSnapshot }: { snapshot: Snapshot }) {
   const { snapshot, poolId, setPoolId } = useSnapshot(initialSnapshot);

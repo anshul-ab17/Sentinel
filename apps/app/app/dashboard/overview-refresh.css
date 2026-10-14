@@ -1,0 +1,426 @@
+.dashboard-shell .overview-metric-strip article:nth-child(1) .stat-heading svg,
+.dashboard-shell .overview-metric-strip article:nth-child(1) .metric-spark {
+  color: #4387e8;
+  fill: #4387e8;
+}
+.dashboard-shell .overview-metric-strip article:nth-child(2) .stat-heading svg,
+.dashboard-shell .overview-metric-strip article:nth-child(2) .metric-spark {
+  color: #42a879;
+  fill: #42a879;
+}
+.dashboard-shell .overview-metric-strip article:nth-child(3) .stat-heading svg,
+.dashboard-shell .overview-metric-strip article:nth-child(3) .metric-spark {
+  color: #e45b68;
+  fill: #e45b68;
+}
+.dashboard-shell .overview-metric-strip article:nth-child(4) .stat-heading svg,
+.dashboard-shell .overview-metric-strip article:nth-child(4) .metric-spark {
+  color: #9172dc;
+  fill: #9172dc;
+}
+.dashboard-shell .overview-metric-strip .stat-heading svg {
+  padding: 3px;
+  width: 24px;
+  height: 24px;
+  border-radius: 6px;
+  background: color-mix(in srgb, currentColor 12%, var(--panel));
+  fill: none;
+}
+
+.dashboard-shell .overview-insight-grid,
+.dashboard-shell .overview-dashboard-grid,
+.dashboard-shell .overview-network-grid {
+  display: grid;
+  gap: 12px;
+  align-items: stretch;
+  margin-bottom: 12px;
+}
+.dashboard-shell .overview-insight-grid {
+  grid-template-columns: minmax(0, 1.75fr) minmax(270px, 0.85fr);
+  grid-template-areas: "activity profile";
+}
+.dashboard-shell .overview-insight-grid > .overview-activity-panel {
+  grid-area: activity;
+  min-height: 284px;
+}
+.dashboard-shell .overview-insight-grid > .signal-profile-panel {
+  grid-area: profile;
+  min-height: 284px;
+}
+.dashboard-shell .overview-dashboard-grid {
+  grid-template-columns: minmax(0, 1.35fr) minmax(340px, 0.8fr);
+  grid-template-areas: "radar evidence";
+}
+.dashboard-shell .overview-dashboard-grid > .radar-panel {
+  grid-area: radar;
+  min-height: 310px;
+}
+.dashboard-shell .overview-dashboard-grid > .evidence-feed {
+  grid-area: evidence;
+  min-height: 310px;
+}
+.dashboard-shell .overview-network-grid {
+  grid-template-columns: minmax(0, 1.15fr) minmax(0, 1fr);
+}
+.dashboard-shell .overview-insight-grid > .panel,
+.dashboard-shell .overview-dashboard-grid > .panel,
+.dashboard-shell .overview-network-grid > .panel {
+  min-width: 0;
+  margin: 0;
+}
+
+/* Bento rhythm across dashboard content; the sidebar keeps its own layout. */
+.dashboard-shell
+  :is(
+    .overview-insight-grid,
+    .overview-dashboard-grid,
+    .overview-network-grid,
+    .investigation-grid,
+    .analytics-grid
+  )
+  > :is(.panel, section, div) {
+  min-width: 0;
+}
+.dashboard-shell .investigation-grid {
+  grid-template-columns: minmax(0, 1.08fr) minmax(340px, 0.92fr);
+  gap: 12px;
+  align-items: stretch;
+}
+.dashboard-shell .investigation-grid > div:first-child > .panel,
+.dashboard-shell .investigation-grid > .panel {
+  height: 100%;
+}
+.dashboard-shell .analytics-grid {
+  grid-template-columns: minmax(0, 1.65fr) minmax(300px, 0.9fr);
+  gap: 12px;
+  align-items: stretch;
+}
+.dashboard-shell .analytics-grid > .panel {
+  height: 100%;
+  margin-bottom: 12px;
+}
+.dashboard-shell .launch-board {
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 12px;
+  align-items: start;
+}
+.dashboard-shell .launch-column {
+  min-width: 0;
+  border-radius: 8px;
+}
+.dashboard-shell .launch-column-cards {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  align-items: start;
+  gap: 10px;
+}
+.dashboard-shell .launch-card {
+  min-width: 0;
+}
+
+.dashboard-shell .overview-activity-panel {
+  overflow: hidden;
+}
+.dashboard-shell .overview-activity-panel .panel-heading,
+.dashboard-shell .signal-profile-panel .panel-heading {
+  padding: 15px 18px 8px;
+}
+.dashboard-shell .overview-activity-panel .panel-heading h2,
+.dashboard-shell .signal-profile-panel .panel-heading h2 {
+  font-size: 15px;
+}
+.dashboard-shell .overview-activity-panel .panel-heading p,
+.dashboard-shell .signal-profile-panel .panel-heading p {
+  margin-top: 2px;
+  font-size: 11px;
+}
+.overview-window-controls {
+  display: flex;
+  align-items: center;
+  gap: 2px;
+  padding: 3px;
+  border: 1px solid var(--line);
+  border-radius: 7px;
+  background: var(--surface);
+}
+.overview-window-controls button {
+  min-width: 34px;
+  padding: 5px 7px;
+  border: 0;
+  border-radius: 5px;
+  background: transparent;
+  color: var(--muted);
+  font-size: 10px;
+  line-height: 1;
+}
+.overview-window-controls button[aria-pressed="true"] {
+  background: var(--accent-soft);
+  color: var(--accent);
+  font-weight: 600;
+}
+.overview-chart-summary {
+  display: flex;
+  align-items: center;
+  gap: 18px;
+  padding: 0 18px;
+  color: var(--muted);
+  font-size: 10px;
+}
+.overview-chart-summary > span {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+}
+.overview-chart-summary strong {
+  color: var(--text);
+  font-variant-numeric: tabular-nums;
+  font-weight: 600;
+}
+.overview-chart-summary i {
+  width: 7px;
+  height: 7px;
+  border-radius: 50%;
+  background: #568fe9;
+}
+.overview-chart-summary .overview-signal-key {
+  background: #f0ad38;
+}
+.overview-chart-summary .overview-evidence-key {
+  background: #9872e8;
+}
+.overview-activity-chart {
+  padding: 0 12px;
+}
+.overview-activity-chart svg {
+  display: block;
+  width: 100%;
+  height: 178px;
+  overflow: visible;
+}
+.overview-chart-grid {
+  stroke: var(--line);
+  stroke-width: 1;
+}
+.overview-chart-label {
+  fill: var(--muted);
+  font-family: var(--font-technical), monospace;
+  font-size: 9px;
+}
+.overview-launch-bar {
+  fill: color-mix(in srgb, #568fe9 15%, transparent);
+}
+.overview-launch-line,
+.overview-signal-line,
+.overview-evidence-line {
+  fill: none;
+  stroke-width: 2;
+  stroke-linecap: round;
+  stroke-linejoin: round;
+}
+.overview-launch-line {
+  stroke: #568fe9;
+}
+.overview-signal-line {
+  stroke: #f0ad38;
+}
+.overview-evidence-line {
+  stroke: #9872e8;
+}
+.overview-launch-point {
+  fill: #568fe9;
+  stroke: var(--panel);
+  stroke-width: 1.5;
+}
+.overview-signal-point {
+  fill: #f0ad38;
+  stroke: var(--panel);
+  stroke-width: 1.5;
+}
+.overview-evidence-point {
+  fill: #9872e8;
+  stroke: var(--panel);
+  stroke-width: 1.5;
+}
+.dashboard-shell main .text-button {
+  color: #397de0;
+}
+.dashboard-shell .radar-panel .badge.neutral {
+  border-color: color-mix(in srgb, #56ad83 28%, var(--panel));
+  background: color-mix(in srgb, #56ad83 12%, var(--panel));
+  color: #25804d;
+}
+.dashboard-shell .radar-panel .badge.amber {
+  border-color: color-mix(in srgb, #e9bd56 30%, var(--panel));
+  background: color-mix(in srgb, #e9bd56 15%, var(--panel));
+  color: #a76a12;
+}
+.dashboard-shell .evidence-feed-row .feed-alert-icon.high {
+  background: color-mix(in srgb, #df5964 14%, var(--panel));
+  color: #df5964;
+}
+.dashboard-shell .evidence-feed-row .feed-alert-icon.medium {
+  background: color-mix(in srgb, #d8911e 14%, var(--panel));
+  color: #d8911e;
+}
+.overview-chart-footnote {
+  margin: 0;
+  padding: 0 18px 12px;
+  color: var(--muted);
+  font-size: 9px;
+}
+
+.signal-profile-panel {
+  display: flex;
+  flex-direction: column;
+}
+.signal-profile-info {
+  display: grid;
+  width: 19px;
+  height: 19px;
+  place-items: center;
+  border: 1px solid var(--line);
+  border-radius: 50%;
+  color: var(--muted);
+  font-family: Georgia, serif;
+  font-size: 12px;
+}
+.signal-profile-visual {
+  display: flex;
+  flex: 1;
+  min-height: 105px;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  padding: 5px 20px 10px;
+}
+.signal-profile-stack {
+  display: flex;
+  width: 100%;
+  height: 10px;
+  overflow: hidden;
+  border-radius: 99px;
+  background: var(--surface);
+}
+.signal-profile-segment + .signal-profile-segment {
+  border-left: 2px solid var(--panel);
+}
+.signal-profile-segment.critical,
+.signal-profile-legend i.critical {
+  background: #da665c;
+}
+.signal-profile-segment.high,
+.signal-profile-legend i.high {
+  background: #e79a49;
+}
+.signal-profile-segment.medium,
+.signal-profile-legend i.medium {
+  background: #e9bd56;
+}
+.signal-profile-segment.low,
+.signal-profile-legend i.low {
+  background: #56ad83;
+}
+.signal-profile-visual > strong {
+  margin-top: 11px;
+  color: var(--text);
+  font-family: var(--font-technical), monospace;
+  font-size: 27px;
+  font-weight: 600;
+  line-height: 1.15;
+}
+.signal-profile-visual > span {
+  color: var(--muted);
+  font-size: 10px;
+}
+.signal-profile-legend {
+  display: grid;
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+  gap: 5px;
+  padding: 0 15px 12px;
+}
+.signal-profile-legend > div {
+  display: grid;
+  grid-template-columns: 8px auto;
+  align-items: center;
+  justify-content: center;
+  column-gap: 5px;
+  row-gap: 2px;
+}
+.signal-profile-legend i {
+  width: 7px;
+  height: 7px;
+  border-radius: 50%;
+}
+.signal-profile-legend strong {
+  font-size: 11px;
+  font-variant-numeric: tabular-nums;
+}
+.signal-profile-legend span {
+  grid-column: 2;
+  color: var(--muted);
+  font-size: 8px;
+  text-transform: capitalize;
+}
+.signal-profile-note {
+  margin: auto 0 0;
+  padding: 10px 15px 12px;
+  border-top: 1px solid var(--line);
+  color: var(--muted);
+  font-size: 9px;
+  line-height: 1.45;
+}
+
+@media (max-width: 1100px) {
+  .dashboard-shell .overview-insight-grid {
+    grid-template-columns: minmax(0, 1.5fr) minmax(250px, 0.85fr);
+  }
+  .dashboard-shell .overview-dashboard-grid {
+    grid-template-columns: minmax(0, 1.2fr) minmax(300px, 0.9fr);
+  }
+  .dashboard-shell .launch-column-cards {
+    grid-template-columns: minmax(0, 1fr);
+  }
+}
+@media (max-width: 850px) {
+  .dashboard-shell .overview-insight-grid {
+    grid-template-columns: minmax(0, 1fr);
+    grid-template-areas: "activity" "profile";
+  }
+  .dashboard-shell .overview-dashboard-grid {
+    grid-template-columns: minmax(0, 1fr);
+    grid-template-areas: "radar" "evidence";
+  }
+  .dashboard-shell .overview-network-grid,
+  .dashboard-shell .investigation-grid,
+  .dashboard-shell .analytics-grid {
+    grid-template-columns: minmax(0, 1fr);
+  }
+  .dashboard-shell .overview-dashboard-grid > .panel {
+    min-height: unset;
+  }
+  .dashboard-shell .signal-profile-panel {
+    min-height: 230px;
+  }
+}
+@media (max-width: 520px) {
+  .dashboard-shell .launch-board {
+    grid-template-columns: minmax(0, 1fr);
+  }
+  .dashboard-shell .overview-activity-panel .panel-heading {
+    align-items: flex-start;
+    flex-direction: column;
+  }
+  .dashboard-shell .overview-window-controls {
+    align-self: stretch;
+    justify-content: space-between;
+  }
+  .dashboard-shell .overview-window-controls button {
+    flex: 1;
+  }
+  .dashboard-shell .overview-activity-chart svg {
+    height: 150px;
+  }
+  .dashboard-shell .signal-profile-legend {
+    padding-inline: 8px;
+  }
+}

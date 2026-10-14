@@ -3,6 +3,7 @@
 import { Icon } from "@app/components/icon";
 import { ActivityChart } from "@app/components/activity-chart";
 import { WalletGraph } from "@app/components/wallet-graph";
+import { OverviewActivity, SignalProfile } from "@app/components/dashboard/overview-activity";
 
 import type { Snapshot } from "@shared/snapshot";
 import type { Alert } from "@shared/events";
@@ -135,6 +136,10 @@ export function DashboardOverview({
           </article>
         ))}
       </div>
+      <div className="overview-insight-grid">
+        <OverviewActivity snapshot={snapshot} />
+        <SignalProfile snapshot={snapshot} />
+      </div>
       <div className="overview-dashboard-grid">
         <section className="panel radar-panel">
           <div className="panel-heading">
@@ -223,7 +228,7 @@ export function DashboardOverview({
           </div>
           {snapshot.alerts.slice(0, 3).map((alert) => (
             <article className="evidence-feed-row" key={alert.id}>
-              <span className="feed-alert-icon">
+              <span className={`feed-alert-icon ${alert.severity}`}>
                 <Icon name="signal" size={19} />
               </span>
               <div>
@@ -243,6 +248,8 @@ export function DashboardOverview({
             <p className="empty">No detection signals in the covered events.</p>
           )}
         </section>
+      </div>
+      <div className="overview-network-grid">
         <ActivityChart snapshot={snapshot} compact />
         <WalletGraph snapshot={snapshot} compact onOpen={onGraph} />
       </div>

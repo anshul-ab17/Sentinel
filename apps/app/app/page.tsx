@@ -48,7 +48,7 @@ export default async function Home() {
         </Link>
         <nav className="landing-nav" aria-label="Main navigation">
           <a href="#workflow">How it works</a>
-          <a href="#approach">Our approach</a>
+          <a href="#approach">Features</a>
           <a href="#questions">FAQ</a>
         </nav>
         <div className="landing-header-actions">
@@ -293,7 +293,7 @@ export default async function Home() {
         <nav className="footer-links" aria-label="Sentinel product">
           <h3>Product</h3>
           <Link href="/dashboard">Dashboard</Link>
-          <a href="#approach">Our approach</a>
+          <a href="#approach">Features</a>
           <a href="/api/pools" target="_blank" rel="noreferrer">
             API reference
           </a>
