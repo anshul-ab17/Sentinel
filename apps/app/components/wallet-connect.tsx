@@ -174,7 +174,7 @@ export function WalletConnect({
         </div>
       )}
       {message && !isWalletOpen && (
-        <div className="wallet-connect-message" role="status">
+        <div className="wallet-connect-message" role="alert">
           {message}
         </div>
       )}
