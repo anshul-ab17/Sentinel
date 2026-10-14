@@ -1,4 +1,11 @@
 .dashboard-shell { --navbar-height: 62px; --bg: #0c0e10; --panel: #101214; --surface: #1a1e23; --sidebar: #101214; --line: #24292f; --divider: var(--line); }
+.dashboard-shell h1, .dashboard-shell h2, .dashboard-shell h3, .dashboard-shell button, .dashboard-shell label, .dashboard-shell th, .dashboard-shell .nav-label, .dashboard-shell .breadcrumb, .dashboard-shell .sidebar-brand-copy { font-family: var(--font-ui), sans-serif; }
+.dashboard-shell .page-heading h1 { font-size: 28px; font-weight: 600; line-height: 1.2; letter-spacing: -.04em; }
+.dashboard-shell .nav-label { font-size: 11px; font-weight: 500; }
+.dashboard-shell .overview-metric-strip .stat-heading { font-size: 12px; font-weight: 400; }
+.dashboard-shell .overview-metric-strip article > strong { font-family: var(--font-technical), monospace; font-size: 28px; font-weight: 500; font-variant-numeric: tabular-nums; }
+.dashboard-shell th, .dashboard-shell td { font-size: 12px; line-height: 1.5; }
+.dashboard-shell td code, .dashboard-shell time, .dashboard-shell .coverage-status-meta, .dashboard-shell .dashboard-sample-window { font-family: var(--font-technical), monospace; font-variant-numeric: tabular-nums; }
 html:has(.app-shell.dashboard-shell), body:has(.app-shell.dashboard-shell) { overflow-x: clip; }
 :root[data-theme="light"] .dashboard-shell { --bg: #f4f8fb; --panel: #fff; --surface: #edf3f8; --sidebar: #f8fafc; --line: #dfe8f0; --divider: var(--line); --text: #15233a; --muted: #677a95; }
 .dashboard-shell main { padding: 16px 24px 0; }
@@ -18,7 +25,7 @@ html:has(.app-shell.dashboard-shell), body:has(.app-shell.dashboard-shell) { ove
 .sidebar-collapse { width: 26px; height: 28px; padding: 0; display: grid; place-items: center; background: transparent; border: 1px solid var(--line); border-radius: 5px; }
 .sidebar-collapse svg { rotate: 0deg; }
 .dashboard-shell .dashboard-nav-group { display: grid; gap: 5px; margin-bottom: 20px; padding-bottom: 20px; border-bottom: 1px solid var(--line); }
-.dashboard-shell .nav-label { font-size: 9px; letter-spacing: .13em; margin: 0 8px 8px; }
+.dashboard-shell .nav-label { font-size: 11px; letter-spacing: .1em; margin: 0 8px 8px; }
 .dashboard-shell nav button { position: relative; font-size: 12px; min-height: 39px; gap: 12px; }
 .dashboard-shell nav button.active { background: var(--accent-soft); color: var(--text); border-color: transparent; }
 .dashboard-shell nav button.active::before { content: ""; position: absolute; left: -1px; top: 7px; bottom: 7px; width: 3px; border-radius: 3px; background: var(--accent); }
@@ -26,9 +33,9 @@ html:has(.app-shell.dashboard-shell), body:has(.app-shell.dashboard-shell) { ove
 .reference-overview .overview-metric-strip { display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); gap: 0; padding: 16px 0; background: var(--panel); border: 1px solid var(--line); border-radius: 8px; margin-bottom: 10px; }
 .dashboard-shell .overview-metric-strip article, .dashboard-shell .overview-metric-strip article:first-child { position: relative; padding: 0 20px; min-height: 96px; background: transparent; border: 0; border-radius: 0; }
 .dashboard-shell .overview-metric-strip article + article { border-left: 1px solid var(--line); }
-.dashboard-shell .overview-metric-strip article > .stat-heading { justify-content: start; gap: 9px; font-size: 11px; }
+.dashboard-shell .overview-metric-strip article > .stat-heading { justify-content: start; gap: 9px; font-size: 12px; font-weight: 400; }
 .dashboard-shell .overview-metric-strip .stat-heading svg { width: 17px; height: 17px; color: var(--text); }
-.dashboard-shell .overview-metric-strip article > strong { font-size: 25px; font-weight: 550; margin: 16px 0 8px; max-width: calc(100% - 70px); }
+.dashboard-shell .overview-metric-strip article > strong { font-family: var(--font-technical), monospace; font-size: 28px; font-weight: 500; font-variant-numeric: tabular-nums; margin: 16px 0 8px; max-width: calc(100% - 70px); }
 .dashboard-shell .overview-metric-strip .stat-tag { font-size: 10px; letter-spacing: 0; font-weight: 450; white-space: nowrap; }
 .metric-spark { position: absolute; width: 66px; height: 44px; right: 18px; top: 28px; fill: var(--accent); }
 .metric-spark.warning { fill: var(--amber); }
@@ -139,6 +146,7 @@ html:has(.app-shell.dashboard-shell), body:has(.app-shell.dashboard-shell) { ove
 .sidebar-profile-copy strong { font-size: 12px; font-weight: 500; color: var(--text); width: 100%; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
 .sidebar-profile-copy small { font-size: 10px; color: var(--muted); width: 100%; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
 .dashboard-shell .sidebar-profile > .brand-logo { flex-shrink: 0; }
+.sidebar-profile-wallet-icon { width: 32px; height: 32px; flex: 0 0 32px; border-radius: 50%; object-fit: cover; }
 .dashboard-shell .sidebar-profile { border: 0; text-align: left; color: var(--muted); }
 .sidebar-profile-chevron { flex-shrink: 0; margin-left: auto; }
 .sidebar-profile-positioner { z-index: 70; max-width: calc(100vw - 24px); }
@@ -164,7 +172,7 @@ html:has(.app-shell.dashboard-shell), body:has(.app-shell.dashboard-shell) { ove
   .dashboard-shell[data-sidebar-collapsed="true"] .shadcn-sidebar .sidebar-brand { padding: 8px; margin: 8px 0 16px; height: 48px; min-height: 48px; }
   .dashboard-shell[data-sidebar-collapsed="true"] .shadcn-sidebar .sidebar-brand .brand-logo { width: 32px; height: 32px; }
 }
-.dashboard-shell .shadcn-sidebar [data-slot="sidebar-menu-button"] { width: 100%; min-height: 34px; height: 34px; padding: 7px 9px; font-size: 12px; border: 0; border-radius: 6px; gap: 12px; transition: background-color 150ms ease, color 150ms ease; }
+.dashboard-shell .shadcn-sidebar [data-slot="sidebar-menu-button"] { width: 100%; min-height: 34px; height: 34px; padding: 7px 9px; font-size: 13px; line-height: 1.4; font-weight: 450; letter-spacing: -.01em; border: 0; border-radius: 6px; gap: 12px; transition: background-color 150ms ease, color 150ms ease; }
 .dashboard-shell .shadcn-sidebar [data-slot="sidebar-menu-button"].active { background: #1B222A; color: var(--text); font-weight: 500; }
 .dashboard-shell .shadcn-sidebar [data-slot="sidebar-menu-button"].active::before { display: none; }
 .dashboard-shell .shadcn-sidebar [data-slot="sidebar-menu-button"] > svg { width: 18px; height: 18px; flex: 0 0 18px; color: #81909F; stroke-width: 1.75; transition: color 150ms ease; }

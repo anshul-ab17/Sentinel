@@ -1,4 +1,13 @@
 :root {
+  --font-display: var(--font-sans);
+  --font-body: var(--font-inter), "Segoe UI", Arial, sans-serif;
+  --font-ui: var(--font-sans);
+  --font-technical: var(--font-mono);
+  --text-primary: var(--text);
+  --text-secondary: var(--muted);
+  --text-muted: var(--muted);
+  --border-color: var(--line);
+  --nav-active: var(--accent-soft);
   --primary: #3F5A6A; --success: #91d9b5; --success-soft: #20362c;
   color-scheme: dark;
   --bg: #101012; --panel: #17171a; --surface: #202024; --line: #303035;
@@ -44,18 +53,28 @@
 }
 
 * { box-sizing: border-box; }
-body { margin: 0; background: var(--bg); color: var(--text); font-family: var(--font-sans), "Segoe UI", Arial, sans-serif; font-size: 14px; -webkit-font-smoothing: antialiased; }
+body { margin: 0; background: var(--bg); color: var(--text); font-family: var(--font-body); font-size: 15px; letter-spacing: -.015em; line-height: 1.6; -webkit-font-smoothing: antialiased; }
 button, input, select { font: inherit; }
+button, input, select, nav, .font-ui { font-family: var(--font-ui), sans-serif; }
 button, a { -webkit-tap-highlight-color: transparent; transition: background .15s, border-color .15s; }
 button { cursor: pointer; color: inherit; }
 button:disabled { opacity: .55; cursor: wait; }
 button:focus-visible, a:focus-visible, input:focus-visible, select:focus-visible, summary:focus-visible { outline: 2px solid var(--accent); outline-offset: 4px; }
 a { color: inherit; text-decoration: none; }
 h1, h2, h3, p { margin-top: 0; }
-h1 { font-size: 30px; font-weight: 600; letter-spacing: -1px; margin-bottom: 10px; }
+h1 { font-size: 30px; font-weight: 600; letter-spacing: -.04em; margin-bottom: 10px; font-family: var(--font-display), sans-serif; }
 h2 { font-size: 16px; letter-spacing: -.3px; font-weight: 600; margin: 0; }
+h2, h3 { font-family: var(--font-display), sans-serif; }
 h3 { font-size: 17px; line-height: 1.5; font-weight: 600; }
-code, kbd { font-family: var(--font-mono), Consolas, monospace; font-size: 11px; }
+code, kbd, time, .font-technical { font-family: var(--font-technical), Consolas, monospace; font-size: 11px; font-variant-numeric: tabular-nums; }
+.font-display { font-family: var(--font-display), sans-serif; }
+.font-body { font-family: var(--font-body); }
+.font-ui { font-family: var(--font-ui), sans-serif; }
+.font-technical { font-family: var(--font-technical), monospace; font-variant-numeric: tabular-nums; }
+.text-primary { color: var(--text-primary); }
+.text-secondary { color: var(--text-secondary); }
+.text-muted { color: var(--text-muted); }
+.text-accent { color: var(--accent); }
 small { font-size: 12px; }
 .app-shell { display: flex; min-height: 100vh; }
 .sidebar { position: fixed; inset: 0 auto 0 0; width: 224px; border-right: 1px solid var(--line); padding: 28px 16px; background: var(--panel); display: flex; flex-direction: column; overflow-y: auto; }

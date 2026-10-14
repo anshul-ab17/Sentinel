@@ -44,7 +44,7 @@ export default async function Home() {
           <span className="landing-brand-mark">
             <BrandLogo size={36} />
           </span>
-          sentinel<span className="landing-brand-ai">AI</span>
+          Sentinel<span className="landing-brand-ai">AI</span>
         </Link>
         <nav className="landing-nav" aria-label="Main navigation">
           <a href="#workflow">How it works</a>
