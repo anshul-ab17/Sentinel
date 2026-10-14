@@ -1,6 +1,6 @@
 import type { Snapshot } from "@shared/snapshot";
 
-export type CoverageWindow = "24h" | "7d" | "30d" | "All";
+export type CoverageWindow = "1h" | "24h" | "7d" | "30d" | "All";
 
 type FeedState = NonNullable<Snapshot["coverage"]["freshness"]>;
 
@@ -72,7 +72,7 @@ export function CoverageStatus({
         <strong>Solana</strong>
       </div>
       <div className="coverage-window-control" role="group" aria-label="Activity time range">
-        {(["24h", "7d", "30d", "All"] as const).map((value) => (
+        {(["1h", "24h", "7d", "30d", "All"] as const).map((value) => (
           <button
             type="button"
             key={value}

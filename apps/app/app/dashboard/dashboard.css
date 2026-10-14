@@ -4,7 +4,7 @@
   padding-top: var(--navbar-height);
   --bg: #08090b; --panel: #0d0f11; --surface: #15181b; --line: #25292d;
   --text: #e8e6eb; --muted: #a09da7; --accent: #91AAB9; --accent-soft: #273740;
-  --button: var(--primary); --button-text: #211719; --sidebar: #08090b;
+  --primary: var(--accent); --button: var(--accent); --button-text: #211719; --sidebar: #08090b;
   --divider: #3b4249;
   --amber: #dfb678; --amber-soft: #322a20;
   background: var(--bg); color: var(--text);
@@ -12,7 +12,7 @@
 :root[data-theme="light"] .dashboard-shell {
   --bg: #fff; --panel: #fff; --surface: #f4f5f8; --line: #e8e9ef;
   --text: #242733; --muted: #687084; --accent: #3F5A6A; --accent-soft: #E9EFF2;
-  --button: var(--primary); --button-text: #171717; --sidebar: #f8f9fb;
+  --primary: var(--accent); --button: var(--accent); --button-text: #fff; --sidebar: #f8f9fb;
   --divider: #cdd3dc;
   --amber: #986324; --amber-soft: #fbf4e9;
 }
@@ -268,6 +268,128 @@
 .dashboard-shell details { font-size: 13px; }
 .dashboard-shell .replay-controls h2 { font-size: 22px; }
 .dashboard-shell footer { font-size: 11px; padding: 18px 0; }
+
+/* Compact command palette, matching the dashboard's dark search reference. */
+.dashboard-shell .command-backdrop {
+  align-items: flex-start;
+  padding: clamp(10px, 3vh, 24px) 16px 24px;
+  background: rgb(3 8 12 / 0.58);
+  backdrop-filter: blur(3px);
+}
+.dashboard-shell .command-palette {
+  width: min(492px, 100%);
+  max-height: min(600px, 94vh);
+  border: 1px solid #1c303b;
+  border-radius: 14px;
+  background: #080e12;
+  color: #e6edf2;
+  box-shadow: 0 22px 64px rgb(0 0 0 / 0.48), inset 0 1px rgb(255 255 255 / 0.025);
+}
+.dashboard-shell .command-input-wrap {
+  min-height: 48px;
+  gap: 10px;
+  margin: 8px 8px 0;
+  padding: 0 11px;
+  border: 1px solid #243944;
+  border-radius: 9px;
+  background: #0b141a;
+  color: #94b2c2;
+}
+.dashboard-shell .command-input-wrap > span {
+  font-size: 0;
+}
+.dashboard-shell .command-input-wrap > span::before {
+  content: "⌕";
+  font-size: 23px;
+  line-height: 1;
+}
+.dashboard-shell .command-input-wrap input {
+  height: 46px;
+  font-size: 12px;
+}
+.dashboard-shell .command-input-wrap input::placeholder {
+  color: #8596a1;
+}
+.dashboard-shell .command-input-wrap > kbd {
+  padding: 3px 6px;
+  border-color: #24333c;
+  border-radius: 5px;
+  color: #a9bac3;
+  background: #111b21;
+}
+.dashboard-shell .command-results {
+  max-height: min(500px, calc(94vh - 112px));
+  padding: 6px 8px 8px;
+}
+.dashboard-shell .command-group {
+  margin: 0 0 5px;
+}
+.dashboard-shell .command-group > p {
+  padding: 5px 7px 4px;
+  margin: 0;
+  color: #91a0a9;
+  font-size: 10px;
+  font-weight: 550;
+}
+.dashboard-shell .command-result {
+  min-height: 39px;
+  gap: 9px;
+  padding: 4px 7px;
+  border-radius: 7px;
+  color: #e1e9ed;
+  transition: background-color 140ms ease, color 140ms ease;
+}
+.dashboard-shell .command-result[aria-selected="true"],
+.dashboard-shell .command-result:hover {
+  background: #11232d;
+  color: #f3f8fa;
+}
+.dashboard-shell .command-result-icon {
+  flex-basis: 25px;
+  height: 25px;
+  border-color: #263944;
+  border-radius: 6px;
+  background: #111d24;
+  color: #afc4cf;
+}
+.dashboard-shell .command-result-copy {
+  gap: 1px;
+}
+.dashboard-shell .command-result-copy strong {
+  font-size: 11px;
+  font-weight: 550;
+}
+.dashboard-shell .command-result-copy small {
+  color: #91a0a9;
+  font-size: 10px;
+}
+.dashboard-shell .command-result-type {
+  color: #86959e;
+  font-size: 9px;
+}
+.dashboard-shell .command-footer {
+  min-height: 34px;
+  gap: 16px;
+  padding: 6px 12px;
+  border-top-color: #1b2a32;
+  color: #9aaab2;
+  font-size: 9px;
+}
+.dashboard-shell .command-footer > span {
+  gap: 5px;
+}
+.dashboard-shell .command-footer kbd {
+  border-color: #26353e;
+  border-radius: 4px;
+  color: #c1cbd0;
+  background: #111b21;
+  font-size: 8px;
+}
+@media (prefers-reduced-motion: reduce) {
+  .dashboard-shell .command-result {
+    transition: none;
+  }
+}
 .dashboard-skip { position: fixed; z-index: 30; left: 15px; top: 10px; transform: translateY(-180%); padding: 12px 18px; background: var(--button); color: var(--button-text); border-radius: 6px; }
 .dashboard-skip:focus { transform: translateY(0); }
 @media (max-width: 1100px) {
@@ -439,4 +561,14 @@
   .dashboard-shell nav { flex-wrap: wrap; justify-content: flex-start; }
   .dashboard-shell nav button { font-size: 12px; }
   .dashboard-shell .replay-controls, .dashboard-shell .timeline { padding: 20px; }
+}
+
+/* Replay controls accent. */
+.dashboard-shell .replay-controls input[type="range"] {
+  accent-color: #ab9ff2;
+}
+.dashboard-shell .replay-controls button.primary {
+  border-color: #ab9ff2;
+  background: #ab9ff2;
+  color: #171522;
 }

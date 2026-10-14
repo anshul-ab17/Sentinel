@@ -37,6 +37,7 @@ export function ApproachAccordion() {
       ref={root}
       role="group"
       aria-label="Investigation principles"
+      onMouseLeave={() => setActive(0)}
     >
       {principles.map((principle, index) => (
         <button
@@ -45,6 +46,8 @@ export function ApproachAccordion() {
           className={`approach-accordion-card approach-accordion-card-${index}`}
           aria-pressed={active === index}
           onClick={() => setActive(index)}
+          onMouseEnter={() => setActive(index)}
+          onFocus={() => setActive(index)}
           onKeyDown={(event) => navigate(event, index)}
         >
           <span className="approach-accordion-index" aria-hidden="true">

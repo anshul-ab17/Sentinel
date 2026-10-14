@@ -5,7 +5,6 @@ import type { Snapshot } from "@shared/snapshot";
 import { ActivityChart } from "@app/components/activity-chart";
 import { DashboardModule, type ModuleView } from "@app/components/dashboard-module";
 import { DashboardOverview } from "@app/components/dashboard-overview";
-import { Icon } from "@app/components/icon";
 import { SidebarProvider } from "@app/components/ui/sidebar";
 import { WalletGraph } from "@app/components/wallet-graph";
 import { CoverageStatus, type CoverageWindow } from "@app/components/dashboard/coverage-status";
@@ -197,17 +196,6 @@ export function Dashboard({ snapshot: initialSnapshot }: { snapshot: Snapshot })
               <div>
                 <h1>{views.find((item) => item.name === view)?.label ?? view}</h1>
                 <p>{subtitles[view]}</p>
-              </div>
-              <div className="dashboard-heading-actions">
-                <button
-                  className="primary"
-                  onClick={() => {
-                    setView("Launch Autopsy");
-                    setQuery("");
-                  }}
-                >
-                  <Icon name="replay" size={15} /> Replay launch
-                </button>
               </div>
             </div>
             <CoverageStatus

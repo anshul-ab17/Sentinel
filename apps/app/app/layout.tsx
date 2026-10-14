@@ -27,7 +27,7 @@ const inter = Inter({
 
 export const metadata: Metadata = {
   icons: { icon: "/sentinel.png", apple: "/sentinel.png" },
-  title: "Sentinel AI · Launch intelligence",
+  title: "Sentinel· Launch intelligence",
   description: "Evidence-first Solana launch investigations, powered by covered on-chain data.",
 };
 

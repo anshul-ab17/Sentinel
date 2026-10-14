@@ -5,6 +5,7 @@ import type { CoverageWindow } from "./coverage-status";
 import type { Snapshot } from "@shared/snapshot";
 
 const windows = [
+  { label: "1h", seconds: 60 * 60 },
   { label: "24h", seconds: 24 * 60 * 60 },
   { label: "7d", seconds: 7 * 24 * 60 * 60 },
   { label: "30d", seconds: 30 * 24 * 60 * 60 },
@@ -214,7 +215,15 @@ export function SignalProfile({ snapshot, range }: { snapshot: Snapshot; range: 
     ...snapshot.alerts.map((alert) => alert.timestamp),
   );
   const seconds =
-    range === "24h" ? 86400 : range === "7d" ? 604800 : range === "30d" ? 2592000 : Infinity;
+    range === "1h"
+      ? 3600
+      : range === "24h"
+        ? 86400
+        : range === "7d"
+          ? 604800
+          : range === "30d"
+            ? 2592000
+            : Infinity;
   const pools = snapshot.pools.filter(
     (pool) => range === "All" || pool.createdAt >= latest - seconds,
   );

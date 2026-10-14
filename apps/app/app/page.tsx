@@ -6,14 +6,13 @@ import { LandingFaq } from "@app/components/landing-faq";
 import { LandingMotion } from "@app/components/landing-motion";
 import { WorkflowStack } from "@app/components/workflow-stack";
 import { ApproachAccordion } from "@app/components/approach-accordion";
+import { ApproachNetwork } from "@app/components/approach-network";
 import { InvestigationWindow } from "@app/components/investigation-window";
 import { ThemeToggle } from "@app/components/theme-toggle";
-import { LaunchPreview } from "@app/components/launch-preview";
 import { Icon } from "@app/components/icon";
 import { WalletConnect } from "@app/components/wallet-connect";
 
 import type { Metadata } from "next";
-import type { Snapshot } from "@shared/snapshot";
 import "./landing.css";
 
 export const metadata: Metadata = {
@@ -23,17 +22,6 @@ export const metadata: Metadata = {
 };
 
 export default async function Home() {
-  let snapshot: Snapshot | null = null;
-  try {
-    const response = await fetch(
-      `${process.env.API_SERVER_URL ?? "http://127.0.0.1:4000"}/api/snapshot`,
-      { cache: "no-store", signal: AbortSignal.timeout(3000) },
-    );
-    if (response.ok) snapshot = await response.json();
-  } catch {
-    // Keep the landing page available while the API or chain providers reconnect.
-  }
-
   return (
     <LandingMotion>
       <a className="skip-link" href="#main-content">
@@ -133,10 +121,25 @@ export default async function Home() {
           </a>
         </section>
 
+        <section id="approach" className="landing-approach" aria-labelledby="approach-heading">
+          <div className="approach-section-heading">
+            <p className="section-kicker">02 / Built for a closer look</p>
+            <h2 id="approach-heading">
+              A signal is
+              <br />
+              just the start.
+            </h2>
+          </div>
+          <div className="approach-copy">
+            <ApproachNetwork />
+          </div>
+          <InvestigationWindow sentinel={<ApproachAccordion />} />
+        </section>
+
         <WorkflowStack>
           <div className="section-intro">
             <div>
-              <p className="section-kicker">How it works / From activity to understanding</p>
+              <p className="section-kicker">03 / How it works / From activity to understanding</p>
               <h2 id="workflow-heading">
                 Follow the signal.
                 <br />
@@ -188,66 +191,9 @@ export default async function Home() {
           </div>
         </WorkflowStack>
 
-        <section id="approach" className="landing-approach" aria-labelledby="approach-heading">
-          <div className="approach-copy">
-            <div>
-              <p className="section-kicker">Built for a closer look</p>
-              <h2 id="approach-heading">
-                A signal is
-                <br />
-                just the start.
-              </h2>
-            </div>
-            <div className="approach-intro-detail">
-              <p>
-                A pattern gives you a question. The evidence helps you decide what to investigate
-                next.
-              </p>
-              <Link href="/dashboard" className="landing-secondary">
-                Take a closer look
-                <Icon name="arrow" size={16} />
-              </Link>
-            </div>
-          </div>
-          <InvestigationWindow sentinel={<ApproachAccordion />}>
-            <div className="hero-product-body">
-              <aside className="product-context">
-                <div className="product-context-heading">
-                  <Icon name="shield" size={18} />
-                  <strong>Follow the evidence.</strong>
-                </div>
-                <p>An investigation begins with a question.</p>
-                <div className="product-question">Who’s behind the early buying?</div>
-                <div className="product-context-steps">
-                  <span>
-                    <Icon name="check" size={15} />
-                    Explore the launch
-                  </span>
-                  <span>
-                    <Icon name="check" size={15} />
-                    Trace funding links
-                  </span>
-                  <span>
-                    <Icon name="check" size={15} />
-                    Inspect the finding
-                  </span>
-                </div>
-                <Link href="/dashboard">
-                  Try it in the dashboard
-                  <Icon name="arrow" size={15} />
-                </Link>
-                <small>Live indexed events. Coverage is shown with each finding.</small>
-              </aside>
-              <div className="hero-visual">
-                <LaunchPreview snapshot={snapshot} />
-              </div>
-            </div>
-          </InvestigationWindow>
-        </section>
-
         <section id="questions" className="landing-faq" aria-labelledby="questions-heading">
           <div className="faq-intro">
-            <p className="section-kicker">Before you explore</p>
+            <p className="section-kicker">FAQ</p>
             <h2 id="questions-heading">
               A few things
               <br />
@@ -300,11 +246,18 @@ export default async function Home() {
         </nav>
         <nav className="footer-links" aria-label="Sentinel resources">
           <h3>Resources</h3>
-          <a href="https://github.com/anshul-ab17/Sentinel" target="_blank" rel="noreferrer">
+          <a href="https://github.com/anshul-ab17/sentinel" target="_blank" rel="noreferrer">
             GitHub
             <Icon name="arrow" size={14} />
           </a>
-          <a href="#questions">Data &amp; coverage</a>
+          <a href="https://x.com/anshul_ab17" target="_blank" rel="noreferrer">
+            X
+            <Icon name="arrow" size={14} />
+          </a>
+          <a href="https://www.linkedin.com/in/anshul-bt17/" target="_blank" rel="noreferrer">
+            LinkedIn
+            <Icon name="arrow" size={14} />
+          </a>
         </nav>
         <Link href="/" className="footer-emblem" aria-label="Sentinel home">
           <BrandLogo size={96} />

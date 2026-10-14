@@ -1007,6 +1007,28 @@
   }
 }
 
+/* Detection signals metric accent. */
+.dashboard-shell .overview-metric-strip article:nth-child(3) .stat-heading svg,
+.dashboard-shell .overview-metric-strip article:nth-child(3) .metric-spark {
+  color: #b94d57;
+  fill: #b94d57;
+}
+.dashboard-shell .overview-metric-strip article:nth-child(3) .stat-tag {
+  background: color-mix(in srgb, #b94d57 12%, var(--panel));
+  color: #b94d57;
+}
+
+/* Detection signal metric accent. */
+.dashboard-shell .overview-metric-strip article:nth-child(3) .stat-heading svg,
+.dashboard-shell .overview-metric-strip article:nth-child(3) .metric-spark {
+  color: #b94d57;
+  fill: #b94d57;
+}
+.dashboard-shell .overview-metric-strip article:nth-child(3) .stat-tag {
+  background: color-mix(in srgb, #b94d57 12%, var(--panel));
+  color: #b94d57;
+}
+
 /* Final card layout overrides: keep the overview table and DBC event panel tidy. */
 .dashboard-shell .reference-overview .overview-dashboard-grid {
   grid-template-columns: minmax(0, 1.35fr) minmax(320px, 0.8fr);
@@ -1714,4 +1736,51 @@
   .dashboard-shell .dbc-detail-grid > .panel {
     min-height: 240px;
   }
+}
+
+/* Detection signals metric accent: keep this after shared signal theme rules. */
+.dashboard-shell .overview-metric-strip article:nth-child(3) .stat-heading svg,
+.dashboard-shell .overview-metric-strip article:nth-child(3) .metric-spark {
+  color: #b94d57;
+  fill: #b94d57;
+}
+.dashboard-shell .overview-metric-strip article:nth-child(3) .stat-tag {
+  background: color-mix(in srgb, #b94d57 12%, var(--panel));
+  color: #b94d57;
+}
+
+/* Launch activity series palette. */
+.dashboard-shell .overview-chart-summary .overview-launch-key,
+.dashboard-shell .overview-launch-line,
+.dashboard-shell .overview-launch-point {
+  background: #4877c0;
+  stroke: #4877c0;
+  fill: #4877c0;
+}
+.dashboard-shell .overview-launch-line {
+  fill: none;
+}
+.dashboard-shell .overview-launch-area {
+  fill: #4877c0;
+}
+.dashboard-shell .overview-launch-bar {
+  fill: color-mix(in srgb, #4877c0 15%, transparent);
+}
+.dashboard-shell .overview-chart-summary .overview-signal-key,
+.dashboard-shell .overview-signal-line,
+.dashboard-shell .overview-signal-point {
+  background: #a3782c;
+  stroke: #a3782c;
+  fill: #a3782c;
+}
+.dashboard-shell .overview-signal-line {
+  fill: none;
+}
+
+/* Risk distribution uses neutral dark gray for the no-signal category only. */
+.dashboard-shell .signal-profile-panel .signal-gauge-segment.clear {
+  stroke: #454545;
+}
+.dashboard-shell .signal-profile-panel .risk-distribution-legend i.clear {
+  background: #454545;
 }
